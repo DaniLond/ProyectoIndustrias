@@ -1,0 +1,16 @@
+{
+  "name": "monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "prepare": "husky install",
+    "install:backend": "cd system-pos-backend && npm install",
+    "install:frontend": "cd system-pos-frontend && npm install",
+    "install:all": "npm run install:backend && npm run install:frontend"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "husky": "^8.0.0"
+  }
+}
