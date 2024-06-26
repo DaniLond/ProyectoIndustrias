@@ -57,3 +57,10 @@ export const login = async (req, res) => {
 		console.error('Error al iniciar sesión:', error);
 	}
 };
+
+export const logout = async (req, res) => {
+	res.cookie('token', '', {
+		expires: new Date(0),
+	});
+	return res.sendStatus(200);
+};
