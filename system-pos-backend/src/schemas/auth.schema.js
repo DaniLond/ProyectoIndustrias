@@ -2,9 +2,10 @@ import { z } from 'zod';
 
 export const registerSchema = z.object({
 	id: z
-		.number({ required_error: 'Cédula es obligatoria' })
-		.int({ message: 'Cédula debe ser un número entero' })
-		.positive(),
+		.string({ required_error: 'Cédula es obligatoria' })
+		.min(3, { message: 'La cédula debe tener un mínimo de 3 caracteres' })
+		.max(255, { message: 'La cédula no puede exceder los 20 caracteres' })
+		.trim(),
 	username: z
 		.string({ required_error: 'Nombre de usuario es obligatorio' })
 		.min(3, { message: 'El nombre de usuario debe tener un mínimo de 3 caracteres' })
