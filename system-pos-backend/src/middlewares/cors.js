@@ -1,8 +1,8 @@
 import cors from 'cors';
-
-const ACCEPTED_ORIGINS = ['http://localhost:4000', 'http://localhost:5173'];
+import { ACCEPTED_ORIGINS } from '../config.js';
 
 const corsOptions = {
+	credentials: true,
 	origin: (origin, callback) => {
 		if (!origin || ACCEPTED_ORIGINS.includes(origin)) {
 			callback(null, true);
