@@ -1,5 +1,5 @@
 import mysql from 'mysql2/promise';
-import { DEFAULT_CONFIG } from './config.js';
+import { DEFAULT_CONFIG } from '../config.js';
 
 // Configuración del pool de conexiones
 const pool = mysql.createPool({

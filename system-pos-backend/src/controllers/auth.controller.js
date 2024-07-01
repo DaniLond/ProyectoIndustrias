@@ -1,9 +1,10 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { connectDB } from '../db.js';
-import { SALT_ROUNDS } from '../config.js';
-import { TOKEN_SECRET } from '../config.js';
+import { connectDB } from '../config/database.js';
+import { SALT_ROUNDS, TOKEN_SECRET } from '../config.js';
 import { createAccessToken } from '../libs/jwt.js';
+
+import User from '../models/user.model.js';
 
 export const register = async (req, res, next) => {
 	const { id, username, password, email } = req.body;
@@ -11,19 +12,14 @@ export const register = async (req, res, next) => {
 	let connection;
 	try {
 		connection = await connectDB();
-		const [rows] = await connection.query('SELECT * FROM USERS WHERE id = ?;', [id]);
+		const existingUser = await User.findById(connection, id);
 
-		if (rows.length !== 0) {
+		if (existingUser) {
 			return res.status(400).json({ error: 'El número de identificación ya está en uso' });
 		}
 
 		const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-		await connection.query('INSERT INTO USERS (id, username, password, email) VALUES (?, ?, ?, ?);', [
-			id,
-			username,
-			hashedPassword,
-			email,
-		]);
+		await User.create(connection, { id, username, password: hashedPassword, email });
 
 		const token = await createAccessToken({ id, username });
 		res.cookie('token', token, {
@@ -48,13 +44,12 @@ export const login = async (req, res, next) => {
 	let connection;
 	try {
 		connection = await connectDB();
-		const [rows] = await connection.query('SELECT * FROM USERS WHERE id = ?;', [id]);
+		const user = await User.findById(connection, id);
 
-		if (rows.length === 0) {
+		if (!user) {
 			return res.status(400).json({ error: 'Usuario no encontrado' });
 		}
 
-		const user = rows[0];
 		const isPasswordValid = await bcrypt.compare(password, user.password);
 
 		if (!isPasswordValid) {
@@ -95,8 +90,7 @@ export const verifyToken = async (req, res) => {
 		let connection;
 		try {
 			connection = await connectDB();
-			const [rows] = await connection.query('SELECT * FROM USERS WHERE id = ?;', [user.id]);
-			const userFound = rows[0];
+			const userFound = await User.findById(connection, user.id);
 
 			if (!userFound) return res.status(401).json({ error: 'Acceso denegado, token no valido' });
 
