@@ -9,6 +9,7 @@ declare -A dependencies=(
   ["jsonwebtoken"]="^9.0.2"
   ["morgan"]="^1.10.0"
   ["mysql2"]="^3.10.1"
+  ["nodemailer"]= "^6.9.14"
   ["zod"]="^3.23.8"
 )
 
