@@ -1,8 +1,9 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '../config/database.js';
-import { SALT_ROUNDS, TOKEN_SECRET } from '../config.js';
+import { SALT_ROUNDS, TOKEN_SECRET, RESET_PASSWORD_TOKEN_EXPIRATION, FRONTEND_URL } from '../config.js';
 import { createAccessToken } from '../libs/jwt.js';
+import { sendMail } from '../libs/email.js';
 
 import User from '../models/user.model.js';
 
@@ -104,4 +105,56 @@ export const verifyToken = async (req, res) => {
 			console.error('Error validando el token:', error);
 		}
 	});
+};
+
+export const forgotPassword = async (req, res, next) => {
+	const { id } = req.body;
+
+	console.log(req.get('host'));
+
+	let connection;
+	try {
+		connection = await connectDB();
+		const user = await User.findById(connection, id);
+
+		if (!user) {
+			return res.status(400).json({ error: 'Usuario no encontrado' });
+		}
+
+		const token = jwt.sign({ id: user.id }, TOKEN_SECRET, { expiresIn: RESET_PASSWORD_TOKEN_EXPIRATION });
+
+		const resetLink = `${FRONTEND_URL}/reset-password/${token}`;
+
+		await sendMail('email-password', user.email, 'Recuperación de Contraseña', { resetLink });
+
+		res.status(200).json({ message: 'Enlace para restablecer contraseña enviado a su cuenta de correo electrónico' });
+	} catch (error) {
+		next(error);
+	} finally {
+		if (connection) connection.release();
+	}
+};
+
+export const resetPassword = async (req, res, next) => {
+	const { token } = req.params;
+	const { password } = req.body;
+
+	try {
+		const decoded = jwt.verify(token, TOKEN_SECRET);
+		const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+		let connection;
+		try {
+			connection = await connectDB();
+			await User.resetPassword(connection, hashedPassword, decoded.id);
+
+			res.status(200).json({ message: 'La contraseña se ha restablecido correctamente' });
+		} catch (error) {
+			next(error);
+		} finally {
+			if (connection) connection.release();
+		}
+	} catch (error) {
+		res.status(400).json({ error: 'Token no valido o expirado' });
+	}
 };

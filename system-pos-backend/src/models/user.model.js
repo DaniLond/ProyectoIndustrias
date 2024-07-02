@@ -13,4 +13,8 @@ export default class User {
 			email,
 		]);
 	}
+
+	static async resetPassword(connection, newPassword, id) {
+		await connection.query('UPDATE USERS SET password = ? WHERE id = ?;', [newPassword, id]);
+	}
 }

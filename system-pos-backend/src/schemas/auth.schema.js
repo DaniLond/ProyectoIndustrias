@@ -36,3 +36,11 @@ export const loginSchema = z.object({
 	id: idSchema,
 	password: passwordSchema,
 });
+
+export const forgotPasswordSchema = z.object({
+	id: idSchema,
+});
+
+export const resetPasswordSchema = z.object({
+	password: passwordSchema,
+});
