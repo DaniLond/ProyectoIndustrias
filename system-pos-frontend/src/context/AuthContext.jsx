@@ -1,5 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { registerRequest, loginRequest, verifyTokenRequest } from '../api/auth.js';
+import {
+	registerRequest,
+	loginRequest,
+	verifyTokenRequest,
+	forgotPasswordRequest,
+	resetPasswordRequest,
+} from '../api/auth.js';
 import Cookies from 'js-cookie';
 
 export const AuthContext = createContext();
@@ -40,6 +46,25 @@ export const AuthProvider = ({ children }) => {
 		}
 	};
 
+	const forgotPassword = async (user) => {
+		try {
+			await forgotPasswordRequest(user);
+		} catch (error) {
+			const errorMessage = error.response.data.message || [error.response.data.error];
+			setErrors(errorMessage);
+		}
+	};
+
+	const resetPassword = async (user, token) => {
+		try {
+			const res = await resetPasswordRequest(user, token);
+			return res.status;
+		} catch (error) {
+			const errorMessage = error.response.data.message || [error.response.data.error];
+			setErrors(errorMessage);
+		}
+	};
+
 	useEffect(() => {
 		if (errors.length > 0) {
 			const timer = setTimeout(() => {
@@ -73,7 +98,9 @@ export const AuthProvider = ({ children }) => {
 	}, []);
 
 	return (
-		<AuthContext.Provider value={{ signup, signin, user, isAuthenticated, errors, loading }}>
+		<AuthContext.Provider
+			value={{ signup, signin, forgotPassword, resetPassword, user, isAuthenticated, errors, loading }}
+		>
 			{children}
 		</AuthContext.Provider>
 	);

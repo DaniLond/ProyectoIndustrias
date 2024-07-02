@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
-import Alert from '../components/ui/Alert';
-import CustomInput from '../components/ui/CustomInput';
+import Alert from '../../components/ui/Alert';
+import CustomInput from '../../components/ui/CustomInput';
 import { Button } from '@nextui-org/button';
 
-function RegisterPage() {
+function LoginPage() {
 	const {
 		register,
 		handleSubmit,
 		formState: { errors },
 	} = useForm();
-	const { signup, isAuthenticated, errors: registerErrors } = useAuth();
+	const { signin, isAuthenticated, errors: loginErrors } = useAuth();
 	const [visibleErrors, setVisibleErrors] = useState([]);
 	const navigate = useNavigate();
 
@@ -24,11 +24,11 @@ function RegisterPage() {
 	}, [isAuthenticated, navigate]);
 
 	useEffect(() => {
-		setVisibleErrors(registerErrors);
-	}, [registerErrors]);
+		setVisibleErrors(loginErrors);
+	}, [loginErrors]);
 
 	const onSubmit = handleSubmit(async (values) => {
-		await signup(values);
+		await signin(values);
 	});
 
 	const handleCloseAlert = (index) => {
@@ -42,7 +42,7 @@ function RegisterPage() {
 					{visibleErrors.map((error, i) => (
 						<Alert
 							type={true}
-							title='Error registrando usuario'
+							title='Error iniciando sesión'
 							message={error}
 							key={i}
 							onClose={() => handleCloseAlert(i)}
@@ -51,8 +51,11 @@ function RegisterPage() {
 					<div className='grid md:grid-cols-2 items-center gap-4 max-w-6xl w-full'>
 						<div className='border border-gray-300 rounded-lg p-6 max-w-md shadow-[0_2px_22px_-4px_rgba(93,96,127,0.2)] max-md:mx-auto'>
 							<form className='space-y-4' onSubmit={onSubmit}>
-								<div className='mb-8'>
-									<h1 className='text-gray-800 text-3xl font-extrabold'>Crear una cuenta</h1>
+								<div className='mb-4'>
+									<h1 className='text-gray-800 text-3xl font-extrabold'>Industrias Londoño</h1>
+									<p className='text-gray-500 text-sm mt-4 leading-relaxed'>
+										Bienvenido a Industrias Londoño, por favor inicie sesión en su cuenta
+									</p>
 								</div>
 
 								<div className='relative flex items-center'>
@@ -64,31 +67,7 @@ function RegisterPage() {
 										name='id'
 										errorMessage={errors.id?.message}
 										errors={errors}
-										autoFocus
-									/>
-								</div>
-
-								<div className='relative flex items-center'>
-									<CustomInput
-										type='text'
-										register={register('username', { required: 'El nombre de usuario es obligatorio' })}
-										label='Nombre de usuario'
-										placeholder='Ingrese su nombre de usuario'
-										name='username'
-										errorMessage={errors.id?.message}
-										errors={errors}
-									/>
-								</div>
-
-								<div className='relative flex items-center'>
-									<CustomInput
-										type='email'
-										register={register('email', { required: 'El correo electrónico es obligatorio' })}
-										label='Correo electrónico'
-										placeholder='Ingrese su correo electrónico'
-										name='email'
-										errorMessage={errors.id?.message}
-										errors={errors}
+										autofocus
 									/>
 								</div>
 
@@ -104,6 +83,12 @@ function RegisterPage() {
 									/>
 								</div>
 
+								<div className='text-sm gap-4'>
+									<Link to='/forgot-password' className='text-primary font-semibold'>
+										¿Olvidó su contraseña?
+									</Link>
+								</div>
+
 								<div className='mt-8'>
 									<Button
 										type='submit'
@@ -111,14 +96,14 @@ function RegisterPage() {
 										radius='sm'
 										className='w-full shadow-xl py-3 px-4 text-sm tracking-wide rounded-lg'
 									>
-										Crear cuenta
+										Iniciar sesión
 									</Button>
 								</div>
 
 								<p className='text-sm mt-8 text-center text-gray-800'>
-									¿Ya tienes una cuenta?{' '}
-									<Link to='/' className='text-primary font-semibold'>
-										Inicia sesión aquí
+									¿No tienes una cuenta?{' '}
+									<Link to='/register' className='text-primary font-semibold'>
+										Registrate aquí
 									</Link>
 								</p>
 							</form>
@@ -126,7 +111,7 @@ function RegisterPage() {
 
 						<div className='lg:h-[400px] md:h-[300px] max-md:mt-8'>
 							<img
-								src='../../public/register.svg'
+								src='../../public/login.svg'
 								className='w-full h-full max-md:w-4/5 mx-auto block object-cover'
 								alt=''
 							/>
@@ -138,4 +123,4 @@ function RegisterPage() {
 	);
 }
 
-export default RegisterPage;
+export default LoginPage;
