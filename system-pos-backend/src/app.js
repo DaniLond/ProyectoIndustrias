@@ -13,8 +13,10 @@ app.use(cookieParser()); // Middleware para manejar las cookies que se envían d
 
 // Importa las rutas
 import authRoutes from './routes/auth.routes.js';
+import clientRoutes from './routes/auth.routes.js';
 
 // Configuración de las rutas
 app.use(authRoutes);
+app.use(clientRoutes);
 
 export default app;
