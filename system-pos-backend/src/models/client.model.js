@@ -1,11 +1,11 @@
 export default class Client {
 	static async findAll(connection) {
-		const [rows] = await connection.query('SELECT * FROM CLIENT;');
+		const [rows] = await connection.query('SELECT * FROM CLIENTS;');
 		return rows;
 	}
 
 	static async findById(connection, id) {
-		const [rows] = await connection.query('SELECT * FROM CLIENT WHERE id = ?;', [id]);
+		const [rows] = await connection.query('SELECT * FROM CLIENTS WHERE id = ?;', [id]);
 		return rows[0];
 	}
 

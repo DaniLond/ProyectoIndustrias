@@ -7,7 +7,7 @@ const idSchema = z
 	.regex(/^\d+$/, { message: 'La cédula solo puede contener dígitos' })
 	.trim();
 
-const nameSchema = z
+const clientNameSchema = z
 	.string({ required_error: 'Nombre es obligatorio' })
 	.min(3, { message: 'El nombre debe tener un mínimo de 3 caracteres' })
 	.max(80, { message: 'El nombre no puede exceder los 80 caracteres' })
@@ -15,22 +15,26 @@ const nameSchema = z
 	.trim();
 
 const emailSchema = z
+	.string()
 	.email({ message: 'Correo electrónico inválido' })
 	.max(100, { message: 'El correo electrónico no puede exceder los 100 caracteres' })
 	.trim();
 
 const phoneSchema = z
+	.string()
 	.min(7, { message: 'El teléfono debe tener un mínimo de 7 caracteres' })
 	.max(20, { message: 'El teléfono no puede exceder los 20 caracteres' })
 	.regex(/^\+?[\d\s-]+$/, { message: 'Formato de teléfono inválido' })
 	.trim();
 
 const addressSchema = z
+	.string()
 	.min(5, { message: 'La dirección debe tener un mínimo de 5 caracteres' })
 	.max(255, { message: 'La dirección no puede exceder los 255 caracteres' })
 	.trim();
 
 const citySchema = z
+	.string()
 	.min(3, { message: 'La ciudad debe tener un mínimo de 2 caracteres' })
 	.max(50, { message: 'La ciudad no puede exceder los 50 caracteres' })
 	.regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, { message: 'La ciudad solo puede contener letras y espacios' })
@@ -38,7 +42,7 @@ const citySchema = z
 
 export const clienteRegisterSchema = z.object({
 	id: idSchema,
-	name: nameSchema,
+	client_name: clientNameSchema,
 	email: emailSchema,
 	phone: phoneSchema,
 	address: addressSchema,
@@ -48,7 +52,7 @@ export const clienteRegisterSchema = z.object({
 export const clienteUpdateSchema = z
 	.object({
 		id: idSchema.optional(),
-		name: nameSchema.optional(),
+		name_name: clientNameSchema.optional(),
 		email: emailSchema.optional(),
 		phone: phoneSchema.optional(),
 		address: addressSchema.optional(),

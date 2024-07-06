@@ -4,12 +4,14 @@ import { registerClientRequest, getClientsRequest, updateClientRequest, deleteCl
 
 export const ClientContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useClient = () => {
-    const context = useContext(useClient);
+    const context = useContext(ClientContext);
     if (!context) throw new Error('useClient debe ser usado dentro de un ClientProvider');
     return context;
 }
 
+// eslint-disable-next-line react/prop-types
 export const ClientProvider = ({ children }) => {
     const [clients, setClients] = useState([]);
     const [errors, setErrors] = useState([]);
@@ -28,7 +30,7 @@ export const ClientProvider = ({ children }) => {
         try {
             const res = await registerClientRequest(client);
             setClients(res.data);
-
+            await getClients();
         } catch (error) {
             const errorMessage = error.response.data.message || [error.response.data.error];
             setErrors(errorMessage);
@@ -49,6 +51,7 @@ export const ClientProvider = ({ children }) => {
         try {
             await deleteClientRequest(id);
             setClients(clients.filter(c => c.id !== id));
+            await getClients();
         } catch (error) {
             const errorMessage = error.response.data.message || [error.response.data.error];
             setErrors(errorMessage);
