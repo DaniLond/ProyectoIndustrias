@@ -1,11 +1,39 @@
 export default class Product {
 	static async findAll(connection) {
-		const [rows] = await connection.query('SELECT * FROM PRODUCTS;');
+		const [rows] = await connection.query(
+			'SELECT' +
+				'\np.name,' +
+				'\nMAX(CASE WHEN r.work_type_id = "Corte de Madera" THEN r.cost END) AS wood_cut_price,' +
+				'\nMAX(CASE WHEN r.work_type_id = "Corte de Tela" THEN r.cost END) AS fabric_cut_price,' +
+				'\nMAX(CASE WHEN r.work_type_id = "Costura" THEN r.cost END) AS sewing_price,' +
+				'\nMAX(CASE WHEN r.work_type_id = "Tapiceria" THEN r.cost END) AS upholsterer_price,' +
+				'\nMAX(CASE WHEN r.work_type_id = "Ensamblado" THEN r.cost END) AS assembled_price,' +
+				'\np.sales_price,' +
+				'\np.image_route' +
+				'\nFROM PRODUCTS p' +
+				'\nLEFT JOIN RATES r ON p.name = r.product_id' +
+				'\nGROUP BY p.name, p.sales_price, p.image_route;',
+		);
 		return rows;
 	}
 
 	static async findById(connection, name) {
-		const [rows] = await connection.query('SELECT * FROM PRODUCTS WHERE name = ?;', [name]);
+		const [rows] = await connection.query(
+			'SELECT' +
+				'\np.name,' +
+				'\nMAX(CASE WHEN r.work_type_id = "Corte de Madera" THEN r.cost END) AS wood_cut_price,' +
+				'\nMAX(CASE WHEN r.work_type_id = "Corte de Tela" THEN r.cost END) AS fabric_cut_price,' +
+				'\nMAX(CASE WHEN r.work_type_id = "Costura" THEN r.cost END) AS sewing_price,' +
+				'\nMAX(CASE WHEN r.work_type_id = "Tapiceria" THEN r.cost END) AS upholsterer_price,' +
+				'\nMAX(CASE WHEN r.work_type_id = "Ensamblado" THEN r.cost END) AS assembled_price,' +
+				'\np.sales_price,' +
+				'\np.image_route' +
+				'\nFROM PRODUCTS p' +
+				'\nLEFT JOIN RATES r ON p.name = r.product_id' +
+				'\nWHERE p.name = ?' +
+				'\nGROUP BY p.name, p.sales_price, p.image_route;',
+			[name],
+		);
 		return rows[0];
 	}
 
