@@ -3,9 +3,9 @@ import React from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
 import { useForm } from 'react-hook-form';
 import { useClient } from '../../context/ClientContext';
-import CustomInput from './CustomInput';
+import CustomInput from '../../components/ui/CustomInput';
 import { useState, useEffect } from "react";
-import Alert from './Alert';
+import Alert from '../../components/ui/Alert';
 
 // eslint-disable-next-line react/prop-types
 export function ClientRegistrationModal({ isOpen, onClose, clientToEdit }) {
@@ -126,7 +126,7 @@ export function ClientRegistrationModal({ isOpen, onClose, clientToEdit }) {
                         />
                     </ModalBody>
                     <ModalFooter>
-                        <Button color="primary" variant="light" onPress={onClose} >
+                        <Button color="danger" variant="ghost" onPress={onClose} >
                             Cancelar
                         </Button>
                         <Button color="primary" type="submit">
