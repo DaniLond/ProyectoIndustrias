@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import {
 	registerRequest,
 	loginRequest,
+	logoutRequest,
 	verifyTokenRequest,
 	forgotPasswordRequest,
 	resetPasswordRequest,
@@ -40,6 +41,19 @@ export const AuthProvider = ({ children }) => {
 			const res = await loginRequest(user);
 			setUser(res.data);
 			setIsAuthenticated(true);
+		} catch (error) {
+			const errorMessage = error.response.data.message || [error.response.data.error];
+			setErrors(errorMessage);
+		}
+	};
+
+	const logout = async () => {
+		try {
+			const res = await logoutRequest();
+			if (res.status === 200) {
+				setUser(null);
+				setIsAuthenticated(false);
+			}
 		} catch (error) {
 			const errorMessage = error.response.data.message || [error.response.data.error];
 			setErrors(errorMessage);
@@ -99,7 +113,7 @@ export const AuthProvider = ({ children }) => {
 
 	return (
 		<AuthContext.Provider
-			value={{ signup, signin, forgotPassword, resetPassword, user, isAuthenticated, errors, loading }}
+			value={{ signup, signin, logout, forgotPassword, resetPassword, user, isAuthenticated, errors, loading }}
 		>
 			{children}
 		</AuthContext.Provider>
