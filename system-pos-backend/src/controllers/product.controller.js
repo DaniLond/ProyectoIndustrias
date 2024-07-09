@@ -81,6 +81,7 @@ export const createProduct = async (req, res, next) => {
 export const updateProduct = async (req, res, next) => {
 	const { name } = req.params;
 	const {
+		name: new_name,
 		wood_cut_price,
 		fabric_cut_price,
 		sewing_price,
@@ -95,6 +96,7 @@ export const updateProduct = async (req, res, next) => {
 		connection = await connectDB();
 		await Product.update(connection, {
 			name,
+			new_name,
 			wood_cut_price,
 			fabric_cut_price,
 			sewing_price,

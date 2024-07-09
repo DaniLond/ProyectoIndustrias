@@ -73,6 +73,7 @@ export default class Product {
 	static async update(connection, product) {
 		const {
 			name,
+			new_name,
 			wood_cut_price,
 			fabric_cut_price,
 			sewing_price,
@@ -83,7 +84,7 @@ export default class Product {
 		} = product;
 		// Actualizar el producto en la tabla PRODUCTS
 		await connection.query('UPDATE PRODUCTS SET name = ?, sales_price = ?, image_route = ? WHERE name = ?;', [
-			name,
+			new_name,
 			sales_price,
 			image_route,
 			name,
@@ -100,7 +101,7 @@ export default class Product {
 				'\nELSE cost' +
 				'\nEND' +
 				'\nWHERE product_id = ?;',
-			[wood_cut_price, fabric_cut_price, sewing_price, upholsterer_price, assembled_price, name],
+			[wood_cut_price, fabric_cut_price, sewing_price, upholsterer_price, assembled_price, new_name],
 		);
 	}
 
