@@ -61,3 +61,5 @@ export const clienteUpdateSchema = z
 	.refine((data) => Object.keys(data).length > 0, {
 		message: 'Al menos un campo debe ser proporcionado para la actualización',
 	});
+
+export { idSchema, clientNameSchema, emailSchema, phoneSchema, addressSchema };
