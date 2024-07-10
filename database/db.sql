@@ -18,7 +18,7 @@ CREATE TABLE STATES(
 );
 
 CREATE TABLE WORK_TYPES(
-    type_name VARCHAR(50) PRIMARY KEY
+    type VARCHAR(50) PRIMARY KEY
 );
 
 CREATE TABLE CLIENTS(
@@ -73,7 +73,7 @@ CREATE TABLE EMPLOYEES(
     email VARCHAR(100),
     phone VARCHAR(20),
     address TEXT,
-    FOREIGN KEY (role) REFERENCES WORK_TYPES(type_name)
+    FOREIGN KEY (role) REFERENCES WORK_TYPES(type)
 );
 
 CREATE TABLE CARD(
@@ -170,10 +170,10 @@ INSERT INTO ORDER_DETAIL (order_id, products_id, quantity, description, state_id
 (2, 5, 2, 'Una Sala Mariposa color beige y la otra negra', 'Pendiente');
 
 -- EMPLOYEES
-INSERT INTO EMPLOYEES (id, employee_id, role, email, phone, address) VALUES
+INSERT INTO EMPLOYEES (id, name, role, email, phone, address) VALUES
 ('2001', 'Carlos Rodríguez', 'Corte de Madera', 'carlos@email.com', '3008053098', 'Carrera 26 # 48 - 50'),
 ('2002', 'Ana Martínez', 'Costura', 'ana@email.com', '3008053011', 'Carrera 50 # 08 - 50'),
-('2003', 'Pedro Sánchez', 'Tapicería', 'pedro@email.com', '3022053098', 'Carrera 35 # 40 - 10'),
+('2003', 'Pedro Sánchez', 'Tapiceria', 'pedro@email.com', '3022053098', 'Carrera 35 # 40 - 10'),
 ('2004', 'Laura Torres', 'Corte de Tela', 'laura@email.com', '3005054018', 'Carrera 50 # 35 - 58'),
-('2005', 'Jorge Mendez', 'Armado', 'jorge@email.com', '3018053333', 'Calle 30 # 08 - 50');
+('2005', 'Jorge Mendez', 'Ensamblado', 'jorge@email.com', '3018053333', 'Calle 30 # 08 - 50');
 

@@ -6,7 +6,7 @@ import { employeeRegisterSchema, employeeUpdateSchema } from '../schemas/employe
 const router = express.Router();
 
 router.get('/employees', getEmployees);
-router.post('/employess', validateSchema(employeeRegisterSchema), registerEmployee);
+router.post('/employees', validateSchema(employeeRegisterSchema), registerEmployee);
 router.put('/employees/:id', validateSchema(employeeUpdateSchema), updateEmployee);
 router.delete('/employees/:id', deleteEmployee);
 

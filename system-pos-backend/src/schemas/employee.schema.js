@@ -3,9 +3,6 @@ import { idSchema, clientNameSchema, emailSchema, phoneSchema, addressSchema } f
 
 const roleSchema = z
     .string({ required_error: 'Rol es obligatorio' })
-    .min(5, { message: 'El rol debe tener un mínimo de 5 caracteres' })
-    .max(50, { message: 'El rol no puede exceder los 50 caracteres' })
-    .trim();
 
 export const employeeRegisterSchema = z.object({
     id: idSchema,

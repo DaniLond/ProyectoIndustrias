@@ -18,7 +18,7 @@ export default class Employee{
     static async create(connection, employee) {
 		const { id, name, role, email, phone, address } = employee;
 		await connection.query(
-			'INSERT INTO CLIENTS (id, name, role, email, phone, address ) VALUES (?, ?, ?, ?, ?, ?);',
+			'INSERT INTO EMPLOYEES (id, name, role, email, phone, address ) VALUES (?, ?, ?, ?, ?, ?);',
 			[id, name, role, email, phone, address],
 		);
 	}
