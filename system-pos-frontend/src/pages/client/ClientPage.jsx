@@ -117,6 +117,7 @@ function ClientPage() {
           Modal={ClientRegistrationModal}
           renderCell={renderCell}
           filterProperty='client_name'
+          additionalFilter={{ field: 'city', label: 'Ciudad' }}
         />
       )}
       <ClientRegistrationModal

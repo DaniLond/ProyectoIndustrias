@@ -133,6 +133,7 @@ function EmployeePage() {
           Modal={EmployeeRegistrationModal}
           renderCell={renderCell}
           filterProperty='name'
+          additionalFilter={{ field: 'role', label: 'Puesto de trabajo' }}
         />
       )}
       <EmployeeRegistrationModal
