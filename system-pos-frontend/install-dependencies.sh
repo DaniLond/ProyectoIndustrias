@@ -2,15 +2,15 @@
 
 # Definir las dependencias y sus versiones
 declare -A dependencies=(
-  ["@nextui-org/react"]= "^2.4.2"
-  ["axios"]= "^1.7.2"
-  ["framer-motion"]= "^11.2.12"
-  ["js-cookie"]= "^3.0.5"
+  ["@nextui-org/react"]="^2.4.2"
+  ["axios"]="^1.7.2"
+  ["framer-motion"]="^11.2.12"
+  ["js-cookie"]="^3.0.5"
   ["react"]="^18.3.1"
   ["react-dom"]="^18.3.1"
   ["react-hook-form"]= "^7.52.0"
   ["react-icons"]= "^5.2.1"
-  [react-router-dom"]= "^6.24.0"
+  ["react-router-dom"]= "^6.24.0"
 )
 
 declare -A devDependencies=(

@@ -84,3 +84,95 @@ SET cost = CASE
         ELSE cost
     END
 WHERE product_id = 'Sala Mariposa';
+-- Inserción de datos en la tabla EMPLOYEES
+INSERT INTO EMPLOYEES (id, name, role, email, phone, address)
+VALUES (
+        '0001',
+        'Carlos Rodríguez',
+        'Corte de Madera',
+        'carlos@email.com',
+        '3008053098',
+        'Carrera 26 # 48 - 50'
+    );
+INSERT INTO EMPLOYEES (id, name, role, email, phone, address)
+VALUES (
+        '0002',
+        'Ana Martínez',
+        'Costura',
+        'ana@email.com',
+        '3008053011',
+        'Carrera 50 # 08 - 50'
+    );
+INSERT INTO EMPLOYEES (id, name, role, email, phone, address)
+VALUES (
+        '0003',
+        'Pedro Sánchez',
+        'Tapiceria',
+        'pedro@email.com',
+        '3022053098',
+        'Carrera 35 # 40 - 10'
+    );
+INSERT INTO EMPLOYEES (id, name, role, email, phone, address)
+VALUES (
+        '0004',
+        'Laura Torres',
+        'Corte de Tela',
+        'laura@email.com',
+        '3005054018',
+        'Carrera 50 # 35 - 58'
+    );
+INSERT INTO EMPLOYEES (id, name, role, email, phone, address)
+VALUES (
+        '0005',
+        'Jorge Mendez',
+        'Ensamblado',
+        'jorge@email.com',
+        '3018053333',
+        'Calle 30 # 08 - 50'
+    );
+-- Inserción de datos en la tabla CLIENTS
+INSERT INTO CLIENTS (id, client_name, email, phone, address, city)
+VALUES (
+        '0001',
+        'Juan Pérez',
+        'juan@email.com',
+        '3014836689',
+        'Calle 45 # 25 - 38',
+        'Palmira'
+    );
+INSERT INTO CLIENTS (id, client_name, email, phone, address, city)
+VALUES (
+        '0002',
+        'María García',
+        'maria@email.com',
+        '3008506234',
+        'Calle 50 # 30 - 38',
+        'Cali'
+    );
+INSERT INTO CLIENTS (id, client_name, email, phone, address, city)
+VALUES (
+        '0003',
+        'Isabel Castillo',
+        'isabel@email.com',
+        '3008502224',
+        'Carrera 34 # 30 - 08',
+        'Cali'
+    );
+INSERT INTO CLIENTS (id, client_name, email, phone, address, city)
+VALUES (
+        '0004',
+        'Esteban Morales',
+        'esteban@email.com',
+        '3008506234',
+        'Calle 30 # 01 - 18',
+        'Bogota'
+    );
+INSERT INTO CLIENTS (id, client_name, email, phone, address, city)
+VALUES (
+        '0005',
+        'Valentina Lopez',
+        'valen@email.com',
+        '3050206234',
+        'Calle 50 # 12 - 08',
+        'Palmira'
+    );

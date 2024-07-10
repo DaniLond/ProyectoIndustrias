@@ -17,8 +17,8 @@ CREATE TABLE STATES(
     state_name VARCHAR(50) PRIMARY KEY
 );
 
-CREATE TABLE TYPE_OF_WORK(
-    type_name VARCHAR(50) PRIMARY KEY
+CREATE TABLE WORK_TYPES(
+    type VARCHAR(50) PRIMARY KEY
 );
 
 CREATE TABLE CLIENTS(
@@ -68,12 +68,12 @@ CREATE TABLE ORDER_DETAIL(
 
 CREATE TABLE EMPLOYEES(
     id VARCHAR(20) PRIMARY KEY,
-    employee_id VARCHAR(80) NOT NULL,
+    name VARCHAR(80) NOT NULL,
     role VARCHAR(50) NOT NULL,
     email VARCHAR(100),
     phone VARCHAR(20),
     address TEXT,
-    FOREIGN KEY (role) REFERENCES TYPE_OF_WORK(type_name)
+    FOREIGN KEY (role) REFERENCES WORK_TYPES(type)
 );
 
 CREATE TABLE CARD(
@@ -88,13 +88,13 @@ CREATE TABLE CARD(
     FOREIGN KEY (state) REFERENCES STATES(state_name)
 );
 
-CREATE TABLE FARE(
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    worker_type_id INT NOT NULL,
-    products_id INT NOT NULL,
-    cost INT,
-    FOREIGN KEY (worker_type_id) REFERENCES TYPE_OF_WORK(type_name),
-    FOREIGN KEY (products_id) REFERENCES PRODUCTS(id)
+CREATE TABLE RATES (
+	work_type_id VARCHAR(50) NOT NULL,
+	product_id VARCHAR(100) NOT NULL,
+	cost INT NOT NULL,
+	PRIMARY KEY (work_type_id, product_id),
+	FOREIGN KEY (work_type_id) REFERENCES WORK_TYPES (type) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (product_id) REFERENCES PRODUCTS (name) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE PAYMENTS(
@@ -170,10 +170,10 @@ INSERT INTO ORDER_DETAIL (order_id, products_id, quantity, description, state_id
 (2, 5, 2, 'Una Sala Mariposa color beige y la otra negra', 'Pendiente');
 
 -- EMPLOYEES
-INSERT INTO EMPLOYEES (id, employee_id, role, email, phone, address) VALUES
+INSERT INTO EMPLOYEES (id, name, role, email, phone, address) VALUES
 ('2001', 'Carlos Rodríguez', 'Corte de Madera', 'carlos@email.com', '3008053098', 'Carrera 26 # 48 - 50'),
 ('2002', 'Ana Martínez', 'Costura', 'ana@email.com', '3008053011', 'Carrera 50 # 08 - 50'),
-('2003', 'Pedro Sánchez', 'Tapicería', 'pedro@email.com', '3022053098', 'Carrera 35 # 40 - 10'),
+('2003', 'Pedro Sánchez', 'Tapiceria', 'pedro@email.com', '3022053098', 'Carrera 35 # 40 - 10'),
 ('2004', 'Laura Torres', 'Corte de Tela', 'laura@email.com', '3005054018', 'Carrera 50 # 35 - 58'),
-('2005', 'Jorge Mendez', 'Armado', 'jorge@email.com', '3018053333', 'Calle 30 # 08 - 50');
+('2005', 'Jorge Mendez', 'Ensamblado', 'jorge@email.com', '3018053333', 'Calle 30 # 08 - 50');
 

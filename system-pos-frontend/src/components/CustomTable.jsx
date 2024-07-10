@@ -22,7 +22,18 @@ import { FaPlus } from 'react-icons/fa6';
 import { CiSearch } from 'react-icons/ci';
 import { FaChevronDown } from 'react-icons/fa';
 
-function CustomTable({ elements, name, columns, initialVisibleColumns, handleCreate, Modal, renderCell }) {
+// eslint-disable-next-line react/prop-types
+function CustomTable({
+	elements,
+	name,
+	columns,
+	initialVisibleColumns,
+	handleCreate,
+	Modal,
+	renderCell,
+	filterProperty,
+	additionalFilter,
+}) {
 	const [filterValue, setFilterValue] = useState(''); // Maneja la barra de búsqueda
 	const [selectedKeys, setSelectedKeys] = useState(new Set([])); // Maneja la seleccion de una fila
 	const [visibleColumns, setVisibleColumns] = useState(new Set(initialVisibleColumns)); // Maneja las columnas visibles en la tabla
@@ -32,22 +43,35 @@ function CustomTable({ elements, name, columns, initialVisibleColumns, handleCre
 		direction: 'ascending',
 	}); // Maneja la dirección en la que ordena los elementos de la tabla
 
+	const [additionalFilterValue, setAdditionalFilterValue] = useState(additionalFilter ? new Set(['all']) : null);
+
+	// eslint-disable-next-line react/prop-types
 	const pages = Math.ceil(elements.length / rowsPerPage);
 
 	const hasSearchFilter = Boolean(filterValue);
 
 	const headerColumns = useMemo(() => {
+		// eslint-disable-next-line react/prop-types
 		return columns.filter((column) => Array.from(visibleColumns).includes(column.uid));
 	}, [visibleColumns, columns]);
+
+	const additionalFilterOptions = useMemo(() => {
+		if (!additionalFilter) return [];
+		return ['all', ...new Set(elements.map((e) => e[additionalFilter.field]))];
+	}, [additionalFilter, elements]);
 
 	const filteredItems = useMemo(() => {
 		let filteredElements = [...elements];
 		if (hasSearchFilter) {
-			filteredElements = filteredElements.filter((e) => e.name.toLowerCase().includes(filterValue.toLowerCase()));
+			filteredElements = filteredElements.filter((e) =>
+				e[filterProperty]?.toLowerCase().includes(filterValue.toLowerCase()),
+			);
 		}
-
+		if (additionalFilter && additionalFilterValue && !additionalFilterValue.has('all')) {
+			filteredElements = filteredElements.filter((e) => additionalFilterValue.has(e[additionalFilter.field]));
+		}
 		return filteredElements;
-	}, [elements, hasSearchFilter, filterValue]);
+	}, [elements, hasSearchFilter, filterValue, filterProperty, additionalFilter, additionalFilterValue]);
 
 	const items = useMemo(() => {
 		const start = (page - 1) * rowsPerPage;
@@ -131,6 +155,34 @@ function CustomTable({ elements, name, columns, initialVisibleColumns, handleCre
 								))}
 							</DropdownMenu>
 						</Dropdown>
+						{additionalFilter && (
+							<Dropdown>
+								<DropdownTrigger className='hidden sm:flex'>
+									<Button
+										endContent={<FaChevronDown className='text-small' />}
+										size='sm'
+										variant='bordered'
+										color='primary'
+									>
+										{additionalFilter.label}
+									</Button>
+								</DropdownTrigger>
+								<DropdownMenu
+									color='primary'
+									variant='bordered'
+									disallowEmptySelection
+									aria-label={`Filtro de ${additionalFilter.label}`}
+									closeOnSelect={false}
+									selectedKeys={additionalFilterValue}
+									selectionMode='multiple'
+									onSelectionChange={setAdditionalFilterValue}
+								>
+									{additionalFilterOptions.map((option) => (
+										<DropdownItem key={option}>{option}</DropdownItem>
+									))}
+								</DropdownMenu>
+							</Dropdown>
+						)}
 						<Modal />
 					</div>
 				</div>
@@ -173,6 +225,9 @@ function CustomTable({ elements, name, columns, initialVisibleColumns, handleCre
 		elements.length,
 		rowsPerPage,
 		onRowsPerPageChange,
+		additionalFilter,
+		additionalFilterValue,
+		additionalFilterOptions,
 	]);
 
 	const bottomContent = useMemo(() => {

@@ -24,8 +24,27 @@ CREATE TABLE RATES (
 	product_id VARCHAR(100) NOT NULL,
 	cost INT NOT NULL,
 	PRIMARY KEY (work_type_id, product_id),
-	FOREIGN KEY (work_type_id) REFERENCES WORK_TYPES (type) ON UPDATE CASCADE ON DELETE CASCADE,
+	FOREIGN KEY (work_type_id) REFERENCES WORK_TYPES (type),
 	FOREIGN KEY (product_id) REFERENCES PRODUCTS (name) ON UPDATE CASCADE ON DELETE CASCADE
+);
+-- Crear tabla para los empleados
+CREATE TABLE EMPLOYEES(
+    id VARCHAR(20) PRIMARY KEY,
+    name VARCHAR(80) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    address TEXT,
+    FOREIGN KEY (role) REFERENCES WORK_TYPES(type)
+);
+-- Crear tabla para los clientes
+CREATE TABLE CLIENTS(
+    id VARCHAR(20) PRIMARY KEY,
+    client_name VARCHAR(80) NOT NULL,
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    address TEXT,
+    city VARCHAR(50)
 );
 DELIMITER //
 CREATE TRIGGER insert_rates AFTER INSERT ON PRODUCTS
