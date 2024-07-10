@@ -7,6 +7,7 @@ async function main() {
 		await connectDB();
 		app.listen(PORT);
 		console.log(`El servidor esta corriendo en puerto http://localhost:${PORT}`);
+		console.log(`Entorno de desarrollo: ${process.env.NODE_ENV}`);
 	} catch (error) {
 		console.error(error);
 	}

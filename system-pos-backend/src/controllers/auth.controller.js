@@ -24,7 +24,7 @@ export const register = async (req, res, next) => {
 
 		const token = await createAccessToken({ id, username });
 		res.cookie('token', token, {
-			httpOnly: true,
+			httpOnly: process.env.NODE_ENV !== 'development',
 			secure: process.env.NODE_ENV === 'production',
 			sameSite: 'strict',
 		});
@@ -59,7 +59,7 @@ export const login = async (req, res, next) => {
 
 		const token = await createAccessToken({ id: user.id, username: user.username });
 		res.cookie('token', token, {
-			httpOnly: true,
+			httpOnly: process.env.NODE_ENV !== 'development',
 			secure: process.env.NODE_ENV === 'production',
 			sameSite: 'strict',
 		});
@@ -81,7 +81,7 @@ export const logout = async (req, res) => {
 	return res.sendStatus(200);
 };
 
-export const verifyToken = async (req, res) => {
+export const verifyToken = async (req, res, next) => {
 	const { token } = req.cookies;
 	if (!token) return res.status(401).json({ error: 'Acceso denegado, no se proporciona ningún token' });
 
@@ -96,21 +96,19 @@ export const verifyToken = async (req, res) => {
 			if (!userFound) return res.status(401).json({ error: 'Acceso denegado, token no valido' });
 
 			return res.json({
-				id: userFound._id,
-				username: userFound.username,
-				email: userFound.email,
+				message: 'Token valido',
+				user: { id: userFound.id, username: userFound.username, email: userFound.email },
 			});
 		} catch (error) {
-			res.status(500).json({ error: 'Error validando el token' });
-			console.error('Error validando el token:', error);
+			next(error);
+		} finally {
+			if (connection) connection.release();
 		}
 	});
 };
 
 export const forgotPassword = async (req, res, next) => {
 	const { id } = req.body;
-
-	console.log(req.get('host'));
 
 	let connection;
 	try {

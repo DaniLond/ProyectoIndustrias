@@ -14,6 +14,7 @@ declare -A dependencies=(
 )
 
 declare -A devDependencies=(
+  ["cross-env"]= "^7.0.3"
   ["dotenv"]="^16.4.5"
   ["eslint"]="^8.57.0"
   ["eslint-config-prettier"]="^9.1.0"

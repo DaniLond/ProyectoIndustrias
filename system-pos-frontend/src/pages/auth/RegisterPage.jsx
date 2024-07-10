@@ -75,7 +75,7 @@ function RegisterPage() {
 										label='Nombre de usuario'
 										placeholder='Ingrese su nombre de usuario'
 										name='username'
-										errorMessage={errors.id?.message}
+										errorMessage={errors.username?.message}
 										errors={errors}
 									/>
 								</div>
@@ -87,7 +87,7 @@ function RegisterPage() {
 										label='Correo electrónico'
 										placeholder='Ingrese su correo electrónico'
 										name='email'
-										errorMessage={errors.id?.message}
+										errorMessage={errors.email?.message}
 										errors={errors}
 									/>
 								</div>

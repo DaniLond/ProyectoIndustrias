@@ -40,7 +40,7 @@ function Navbar() {
 				<nav className='flex-1 px-2 py-4'>
 					<h6 className='text-primary text-sm font-bold px-4'>PRINCIPAL</h6>
 					<a
-						href='/'
+						href='/home'
 						className='text-black hover:text-primary text-sm flex items-center hover:bg-primary-50 rounded px-4 py-3 transition-all'
 					>
 						<FaHome className='w-[18px] h-[18px] mr-4' />
@@ -54,11 +54,11 @@ function Navbar() {
 						Pedidos
 					</a>
 					<a
-						href='/workers'
+						href='/employees'
 						className='text-black hover:text-primary text-sm flex items-center hover:bg-primary-50 rounded px-4 py-3 transition-all'
 					>
 						<FaHammer className='w-[18px] h-[18px] mr-4' />
-						Colaboradores
+						Empleados
 					</a>
 					<a
 						href='/clients'
