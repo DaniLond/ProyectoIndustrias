@@ -29,7 +29,6 @@ function CustomTable({
 	columns,
 	initialVisibleColumns,
 	handleCreate,
-	Modal,
 	renderCell,
 	filterProperty,
 	additionalFilter,
@@ -183,7 +182,7 @@ function CustomTable({
 								</DropdownMenu>
 							</Dropdown>
 						)}
-						<Modal />
+			
 					</div>
 				</div>
 				<div className='flex justify-between items-center text-default-400 text-small'>
@@ -282,7 +281,7 @@ function CustomTable({
 			</TableHeader>
 			<TableBody emptyContent={`No hay ${name} registrados`} items={sortedItems}>
 				{(item) => (
-					<TableRow key={item.name}>{(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}</TableRow>
+					<TableRow key={item.name || item.product_name}>{(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}</TableRow>
 				)}
 			</TableBody>
 		</Table>

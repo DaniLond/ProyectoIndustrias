@@ -4,7 +4,7 @@
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
-		"dev": "cross-env NODE_ENV=development nodemon src/server.js --ignore client",
+		"dev": "cross-env NODE_ENV=development nodemon src/server.js",
 		"start": "cross-env NODE_ENV=production node src/server.js",
 		"lint": "eslint . --ext js --report-unused-disable-directives --max-warnings 0",
 		"format": "prettier --write ."

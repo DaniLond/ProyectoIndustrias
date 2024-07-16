@@ -30,41 +30,89 @@ CREATE TABLE CLIENTS(
     city VARCHAR(50)
 );
 
-CREATE TABLE PRODUCTS(
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    products_name VARCHAR(100) NOT NULL,
-    wood_cut_price INT NOT NULL,
-    fabric_cut_price INT NOT NULL,
-    sewing_price INT NOT NULL,
-    price_upholsterer INT NOT NULL,
-    assembled_price INT NOT NULL,
-    sales_price INT NOT NULL,
-    image_route VARCHAR(260)
+CREATE TABLE PRODUCTS (
+	name VARCHAR(100) PRIMARY KEY,
+	sales_price INT NOT NULL,
+	image_route VARCHAR(255),
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE ORDERS(
     id INT AUTO_INCREMENT PRIMARY KEY,
     detail TEXT,
     client VARCHAR(20) NOT NULL,
-    date_realization DATE NOT NULL,
+    date_realization DATE NOT NULL DEFAULT (CURDATE()),
     delivery_date DATE NOT NULL,
     address TEXT NOT NULL,
     id_state VARCHAR(50) NOT NULL,
     FOREIGN KEY (client) REFERENCES CLIENTS(id),
     FOREIGN KEY (id_state) REFERENCES STATES(state_name)
 );
+DELIMITER //
+CREATE TRIGGER insert_order
+AFTER INSERT ON ORDERS
+FOR EACH ROW
+BEGIN
+    DECLARE finished INTEGER DEFAULT 0;
+    DECLARE temp_product_name VARCHAR(100);
+    DECLARE temp_detail TEXT;
+    DECLARE temp_cursor CURSOR FOR
+        SELECT product_name, detail FROM TEMP_ORDER_PRODUCTS;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = 1;
+
+    OPEN temp_cursor;
+
+    get_product: LOOP
+        FETCH temp_cursor INTO temp_product_name, temp_detail;
+        IF finished THEN
+            LEAVE get_product;
+        END IF;
+        
+        -- Insertar en ORDER_DETAIL por cada producto en TEMP_ORDER_PRODUCTS
+        INSERT INTO ORDER_DETAIL (order_id, product, description, state)
+        VALUES (NEW.id, temp_product_name, temp_detail, 'Pendiente');
+    END LOOP get_product;
+
+    CLOSE temp_cursor;
+
+    -- Limpiar la tabla temporal
+    DELETE FROM TEMP_ORDER_PRODUCTS;
+END;
+//
+
 
 CREATE TABLE ORDER_DETAIL(
     id INT AUTO_INCREMENT PRIMARY KEY,
     order_id INT NOT NULL,
-    products_id INT NOT NULL,
-    quantity INT NOT NULL,
+    product VARCHAR(100) NOT NULL,
     description TEXT,
-    state_id VARCHAR(50) NOT NULL,
+    state VARCHAR(50) NOT NULL,
     FOREIGN KEY (order_id) REFERENCES ORDERS(id),
-    FOREIGN KEY (products_id) REFERENCES PRODUCTS(id),
-    FOREIGN KEY (state_id) REFERENCES STATES(state_name)
+    FOREIGN KEY (product) REFERENCES PRODUCTS(name),
+    FOREIGN KEY (state) REFERENCES STATES(state_name)
 );
+
+--Tabla temporal para almacenar los productos del pedido
+CREATE TABLE TEMP_ORDER_PRODUCTS (
+    temp_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_name VARCHAR(100),
+    quantity INT,
+    detail TEXT
+);
+DELIMITER //
+CREATE PROCEDURE add_temp_product(IN p_product_name VARCHAR(100), IN p_quantity INT, IN p_detail TEXT)
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    WHILE i < p_quantity DO
+        INSERT INTO TEMP_ORDER_PRODUCTS (product_name, detail) VALUES (p_product_name, p_detail);
+        SET i = i + 1;
+    END WHILE;
+END;
+//
+
+
+
 
 CREATE TABLE EMPLOYEES(
     id VARCHAR(20) PRIMARY KEY,
