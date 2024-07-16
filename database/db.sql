@@ -97,17 +97,13 @@ CREATE TABLE ORDER_DETAIL(
 CREATE TABLE TEMP_ORDER_PRODUCTS (
     temp_id INT AUTO_INCREMENT PRIMARY KEY,
     product_name VARCHAR(100),
-    quantity INT,
     detail TEXT
 );
 DELIMITER //
-CREATE PROCEDURE add_temp_product(IN p_product_name VARCHAR(100), IN p_quantity INT, IN p_detail TEXT)
+CREATE PROCEDURE add_temp_product(IN p_product_name VARCHAR(100), IN p_detail TEXT)
 BEGIN
-    DECLARE i INT DEFAULT 0;
-    WHILE i < p_quantity DO
-        INSERT INTO TEMP_ORDER_PRODUCTS (product_name, detail) VALUES (p_product_name, p_detail);
-        SET i = i + 1;
-    END WHILE;
+    INSERT INTO TEMP_ORDER_PRODUCTS (product_name, detail)
+    VALUES (p_product_name, p_detail);
 END;
 //
 

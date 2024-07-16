@@ -61,8 +61,8 @@ export default class Order {
 
         // Agregar productos a la tabla de detalle de órdenes
         for (const product of products) {
-            const { product_name, quantity, detail } = product;
-            await connection.query('CALL add_temp_product(?, ?, ?);', [product_name, quantity, detail]);
+            const { product_name, detail } = product;
+            await connection.query('CALL add_temp_product(?, ?);', [product_name, detail]);
         }
 
         await connection.query(

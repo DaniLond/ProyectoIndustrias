@@ -12,7 +12,7 @@ function OrderPage() {
     const { orders, getOrders, errors } = useOrder();
     const [visibleErrors, setVisibleErrors] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -54,6 +54,11 @@ function OrderPage() {
 
     const initialVisibleColumns = ["id", "client_name", "date_realization", "delivery_date", "id_state", "actions"];
 
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toISOString().split('T')[0];
+    };
+
     const renderCell = (order, columnKey) => {
         const cellValue = order[columnKey];
         switch (columnKey) {
@@ -77,6 +82,9 @@ function OrderPage() {
                         </Dropdown>
                     </div>
                 );
+            case 'date_realization':
+            case 'delivery_date':
+                return formatDate(cellValue);
             default:
                 return cellValue;
         }

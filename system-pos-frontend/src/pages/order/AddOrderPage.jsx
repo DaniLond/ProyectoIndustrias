@@ -12,6 +12,7 @@ import { useClient } from '../../context/ClientContext';
 import { useProducts } from '../../context/ProductContext';
 import { MdDelete } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
+import { FaEdit } from 'react-icons/fa';
 
 function OrderRegistrationPage() {
   const { createOrder, errors: orderErrors } = useOrder();
@@ -28,6 +29,8 @@ function OrderRegistrationPage() {
     products: []
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [nextProductId, setNextProductId] = useState(1);
+  const [editingProduct, setEditingProduct] = useState(null);
 
   useEffect(() => {
     getClients();
@@ -39,20 +42,48 @@ function OrderRegistrationPage() {
     setVisibleErrors(orderErrors);
   }, [orderErrors]);
 
+  const handleAddOrEditProduct = (products) => {
+    if (editingProduct) {
+      // Si estamos editando, actualizamos el producto existente
+      setOrderData(prevData => ({
+        ...prevData,
+        products: prevData.products.map(p =>
+          p.id === editingProduct.id ? { ...p, ...products } : p
+        )
+      }));
+    } else {
+      // Si estamos agregando nuevos productos
+      setOrderData(prevData => {
+        const updatedProducts = products.map((p, index) => ({
+          ...p,
+          id: nextProductId + index
+        }));
+
+        return {
+          ...prevData,
+          products: [...prevData.products, ...updatedProducts]
+        };
+      });
+
+      setNextProductId(nextProductId + products.length);
+    }
+
+    setIsModalOpen(false);
+    setEditingProduct(null);
+  };
+
+  const handleEditProduct = (product) => {
+    setEditingProduct(product);
+    setIsModalOpen(true);
+  };
+
   const columns = [
+    { uid: 'id', name: 'ID', sortable: true },
     { uid: 'product_name', name: 'Producto', sortable: true },
-    { uid: 'quantity', name: 'Cantidad', sortable: true },
     { uid: 'detail', name: 'Detalle' },
     { uid: 'actions', name: 'Acciones' }
   ];
 
-  const handleAddProduct = (product) => {
-    setOrderData(prevData => ({
-      ...prevData,
-      products: [...prevData.products, product]
-    }));
-    setIsModalOpen(false);
-  };
 
   const handleCreateProduct = () => {
     setIsModalOpen(true);
@@ -62,11 +93,13 @@ function OrderRegistrationPage() {
     switch (columnKey) {
       case "actions":
         return (
-          <div className="relative flex justify-center items-center">
-            <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => handleDeleteProduct(product.product_name)}>
+          <div className="relative flex justify-center items-center gap-2">
+            <Button isIconOnly size="sm" variant="light" color="primary" onPress={() => handleEditProduct(product)}>
+              <FaEdit />
+            </Button>
+            <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => handleDeleteProduct(product.id)}>
               <MdDelete />
             </Button>
-
           </div>
         );
       default:
@@ -79,7 +112,7 @@ function OrderRegistrationPage() {
   const handleDeleteProduct = (productId) => {
     setOrderData(prevData => ({
       ...prevData,
-      products: prevData.products.filter(p => p.product_name !== productId)
+      products: prevData.products.filter(p => p.id !== productId)
     }));
   };
 
@@ -150,7 +183,7 @@ function OrderRegistrationPage() {
           elements={orderData.products}
           name="producto"
           columns={columns}
-          initialVisibleColumns={['product_name', 'quantity', 'detail', 'actions']}
+          initialVisibleColumns={['id', 'product_name', 'detail', 'actions']}
           handleCreate={handleCreateProduct}
           renderCell={renderCell}
           filterProperty="product_name"
@@ -163,9 +196,13 @@ function OrderRegistrationPage() {
 
       <ProductModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAddProduct={handleAddProduct}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingProduct(null);
+        }}
+        onAddProduct={handleAddOrEditProduct}
         products={products}
+        editingProduct={editingProduct}
       />
     </DefaultLayout>
   );
