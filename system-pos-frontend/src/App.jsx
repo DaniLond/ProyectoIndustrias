@@ -44,6 +44,7 @@ function App() {
 										<Route path='/employees' element={<EmployeePage />}></Route>
 										<Route path='/orders' element={<OrderPage />}></Route>
 										<Route path='/create-order' element={<RegisterOrderPage />}></Route>
+										<Route path='/edit-order/:id' element={<RegisterOrderPage />} />
 									</Route>
 
 									{/* Ruta para manejo de errores 404 en rutas públicas */}

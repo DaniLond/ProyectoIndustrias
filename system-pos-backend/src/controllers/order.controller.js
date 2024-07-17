@@ -40,7 +40,7 @@ export const getOrderById = async (req, res, next) => {
 };
 
 export const getProductToOrder = async (req, res, next) => {
-    const { id } = req.params;
+	const { id } = req.params;
 	let connection;
 
 	try {
