@@ -5,21 +5,15 @@ import CustomInput from '../../components/ui/CustomInput';
 import CustomSelect from '../../components/ui/CustomSelect';
 import Alert from '../../components/ui/Alert';
 
-// eslint-disable-next-line react/prop-types
 export function ProductModal({ isOpen, onClose, onAddProduct, products, editingProduct }) {
-	const {
-		register,
-		handleSubmit,
-		formState: { errors },
-		setValue,
-		reset,
-	} = useForm();
-	const [visibleErrors, setVisibleErrors] = useState([]);
+    const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm();
+    const [visibleErrors, setVisibleErrors] = useState([]);
 
-	useEffect(() => {
-		if (editingProduct) {
-			setValue('product_name', editingProduct.product_name);
-			setValue('detail', editingProduct.detail);
+    useEffect(() => {
+        if (editingProduct) {
+            setValue('product_name', editingProduct.product_name);
+            setValue('detail', editingProduct.detail);
+            setValue('quantity', '1');
 		} else {
 			reset({
 				product_name: '',
@@ -29,15 +23,13 @@ export function ProductModal({ isOpen, onClose, onAddProduct, products, editingP
 		}
 	}, [editingProduct, setValue, reset]);
 
-	const handleAddOrEditProduct = (data) => {
-		if (editingProduct) {
-			// If editing, only update the detail
+    const handleAddOrEditProduct = (data) => {
+        if (editingProduct) {
 			onAddProduct({
 				...editingProduct,
 				detail: data.detail,
 			});
 		} else {
-			// If adding new products
 			const quantity = parseInt(data.quantity, 10);
 			const productsToAdd = Array.from({ length: quantity }, () => ({
 				product_name: data.product_name,
@@ -45,7 +37,13 @@ export function ProductModal({ isOpen, onClose, onAddProduct, products, editingP
 			}));
 			onAddProduct(productsToAdd);
 		}
-	};
+        reset({
+            product_name: '',
+            quantity: '',
+            detail: 'opcional',
+        });
+        onClose();
+    };
 
 	const handleCloseAlert = (index) => {
 		setVisibleErrors((prevErrors) => prevErrors.filter((_, i) => i !== index));

@@ -9,6 +9,8 @@ import { useOrder } from '../../context/OrderContext';
 import { useNavigate } from 'react-router-dom';
 import { FaRegEye } from 'react-icons/fa';
 import ViewProductModal from './ViewProductModal';
+import OrderProgressModal from './OrderProgressModal';
+import { Select, SelectItem } from '@nextui-org/react';
 
 function OrderPage() {
 	const { orders, getOrders, getProductToOrder, errors } = useOrder();
@@ -16,7 +18,12 @@ function OrderPage() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [selectedOrderProducts, setSelectedOrderProducts] = useState([]);
+	const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+	const [selectedOrderProgress, setSelectedOrderProgress] = useState(null);
+	const [selectedOrderInfo, setSelectedOrderInfo] = useState(null);	
 	const navigate = useNavigate();
+	const { updateOrderState } = useOrder();
+	const { getOrderProgress } = useOrder();
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -46,6 +53,14 @@ function OrderPage() {
 		}
 	};
 
+	const handleStateChange = async (orderId, newState) => {
+		try {
+			await updateOrderState(orderId, newState);
+		} catch (error) {
+			setVisibleErrors([error.message]);
+		}
+	};
+
 	useEffect(() => {
 		setVisibleErrors(errors);
 	}, [errors]);
@@ -53,6 +68,25 @@ function OrderPage() {
 	const handleCloseAlert = (index) => {
 		setVisibleErrors((prevErrors) => prevErrors.filter((_, i) => i !== index));
 	};
+
+	const handleViewProgress = async (orderId) => {
+		try {
+			const progress = await getOrderProgress(orderId);
+			const orderInfo = orders.find(order => order.id === orderId);
+			
+			setSelectedOrderProgress(progress);
+			setSelectedOrderInfo(orderInfo);
+			setIsProgressModalOpen(true);
+		} catch (error) {
+			setVisibleErrors([error.message]);
+		}
+	};
+
+	const orderStates = [
+		{ key: 'Pendiente', label: 'Pendiente' },
+		{ key: 'En progreso', label: 'En progreso' },
+		{ key: 'Completado', label: 'Completado' }
+	];
 
 	const columns = [
 		{ name: 'ID', uid: 'id', sortable: true },
@@ -62,10 +96,11 @@ function OrderPage() {
 		{ name: 'FECHA DE ENTREGA', uid: 'delivery_date', sortable: true },
 		{ name: 'DIRECCIÓN', uid: 'address', sortable: true },
 		{ name: 'ESTADO', uid: 'id_state', sortable: true },
+		{ name: 'PROGRESO', uid: 'progress' }, // YA ESTÁ AGREGADO
 		{ name: 'ACCIONES', uid: 'actions' },
 	];
 
-	const initialVisibleColumns = ['id', 'client_name', 'date_realization', 'delivery_date', 'id_state', 'actions'];
+	const initialVisibleColumns = ['id', 'client_name', 'date_realization', 'delivery_date', 'id_state', 'progress', 'actions'];
 
 	const formatDate = (dateString) => {
 		const date = new Date(dateString);
@@ -75,6 +110,37 @@ function OrderPage() {
 	const renderCell = (order, columnKey) => {
 		const cellValue = order[columnKey];
 		switch (columnKey) {
+			case 'id_state':
+				return (
+					<Select
+						size="sm"
+						selectedKeys={[cellValue]}
+						onSelectionChange={(keys) => {
+							const newState = Array.from(keys)[0];
+							if (newState !== cellValue) {
+								handleStateChange(order.id, newState);
+							}
+						}}
+						className="min-w-[120px]"
+					>
+						{orderStates.map((state) => (
+							<SelectItem key={state.key} value={state.key}>
+								{state.label}
+							</SelectItem>
+						))}
+					</Select>
+				);
+			case 'progress':
+				return (
+					<Button
+						size="sm"
+						variant="light"
+						color="primary"
+						onPress={() => handleViewProgress(order.id)}
+					>
+						Ver Progreso
+					</Button>
+				);
 			case 'actions':
 				return (
 					<div className='relative flex justify-center items-center'>
@@ -123,7 +189,19 @@ function OrderPage() {
 					additionalFilter={{ field: 'state_name', label: 'Estado' }}
 				/>
 			)}
-			<ViewProductModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} products={selectedOrderProducts} />
+
+			<ViewProductModal 
+				isOpen={isModalOpen} 
+				onClose={() => setIsModalOpen(false)} 
+				products={selectedOrderProducts} 
+			/>
+			
+			<OrderProgressModal
+				isOpen={isProgressModalOpen}
+				onClose={() => setIsProgressModalOpen(false)}
+				progressData={selectedOrderProgress}
+				orderInfo={selectedOrderInfo}
+			/>
 		</DefaultLayout>
 	);
 }

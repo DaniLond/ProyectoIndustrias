@@ -12,6 +12,8 @@ import { FaClipboardList } from 'react-icons/fa';
 import { FaPlus } from 'react-icons/fa6';
 import { FiExternalLink } from 'react-icons/fi';
 import { BsGrid } from 'react-icons/bs';
+import AssignTaskModal from './AssignTaskModal';
+import { useNavigate } from 'react-router-dom';
 
 function EmployeePage() {
   const { employees, getEmployees, deleteEmployee, errors } = useEmployee();
@@ -19,6 +21,10 @@ function EmployeePage() {
   const [isOpen, setIsOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+  const navigate = useNavigate();
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +63,16 @@ function EmployeePage() {
     setVisibleErrors((prevErrors) => prevErrors.filter((_, i) => i !== index));
   };
 
+  const handleAssignTask = (employeeId) => {
+    setSelectedEmployeeId(employeeId);
+    setIsModalOpen(true);
+  };
+
+  const handleViewTemplate = (employeeId) => {
+    navigate(`/tasks/employee/${employeeId}`);
+  };
+
+
   const columns = [
     { name: "ID", uid: "id", sortable: true },
     { name: "NOMBRE", uid: "name", sortable: true },
@@ -86,10 +102,10 @@ function EmployeePage() {
                 <DropdownItem startContent={<FaEdit />} onClick={() => handleEdit(employee)}>
                   Editar
                 </DropdownItem>
-                <DropdownItem startContent={<FaPlus />} >
+                <DropdownItem startContent={<FaPlus />} onClick={() => handleAssignTask(employee.id)}>
                   Asignar Tarea
                 </DropdownItem>
-                <DropdownItem startContent={<FaClipboardList />} >
+                <DropdownItem startContent={<FaClipboardList />} onClick={() => handleViewTemplate(employee.id)} >
                   Plantilla
                 </DropdownItem>
                 <DropdownItem startContent={<FiExternalLink />} >
@@ -143,6 +159,11 @@ function EmployeePage() {
           setEditingEmployee(null);
         }}
         employeeToEdit={editingEmployee}
+      />
+      <AssignTaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        employeeId={selectedEmployeeId}
       />
     </DefaultLayout>
   );

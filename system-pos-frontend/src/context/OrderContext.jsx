@@ -6,7 +6,13 @@ import {
 	updateOrderRequest,
 	getProductsByOrderIdRequest,
 	deleteProductFromOrderRequest,
+	updateOrderStateRequest,
 } from '../api/order.js';
+
+import {
+    getOrderProgressRequest,
+    getOrderDetailTasksRequest
+} from '../api/task.js';
 
 export const OrderContext = createContext();
 
@@ -20,6 +26,8 @@ export const useOrder = () => {
 export const OrderProvider = ({ children }) => {
 	const [orders, setOrders] = useState([]);
 	const [orderProducts, setOrderProducts] = useState([]);
+	const [orderProgress, setOrderProgress] = useState(null);
+    const [orderDetailTasks, setOrderDetailTasks] = useState([]);
 	const [errors, setErrors] = useState([]);
 
 	const getOrders = async () => {
@@ -84,6 +92,46 @@ export const OrderProvider = ({ children }) => {
 		}
 	};
 
+	const updateOrderState = async (id, newState) => {
+		try {
+			await updateOrderStateRequest(id, newState);
+			// Actualizar el estado local
+			setOrders(orders.map(order => 
+				order.id === id 
+					? { ...order, id_state: newState }
+					: order
+			));
+		} catch (error) {
+			const errorMessage = error.response?.data?.message || 
+							   [error.response?.data?.error];
+			setErrors(errorMessage);
+		}
+	};
+
+	const getOrderProgress = async (orderId) => {
+        try {
+            const res = await getOrderProgressRequest(orderId);
+            setOrderProgress(res.data);
+            return res.data;
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || [error.response?.data?.error];
+            setErrors(errorMessage);
+            throw error;
+        }
+    };
+
+    const getOrderDetailTasks = async (orderDetailId) => {
+        try {
+            const res = await getOrderDetailTasksRequest(orderDetailId);
+            setOrderDetailTasks(res.data.tasks);
+            return res.data;
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || [error.response?.data?.error];
+            setErrors(errorMessage);
+            throw error;
+        }
+    };
+
 	useEffect(() => {
 		if (errors.length > 0) {
 			const timer = setTimeout(() => {
@@ -103,8 +151,11 @@ export const OrderProvider = ({ children }) => {
 				getOrder,
 				createOrder,
 				updateOrder,
+				updateOrderState,
 				getProductToOrder,
 				deleteProductFromOrder,
+				getOrderProgress,
+                getOrderDetailTasks,
 			}}
 		>
 			{children}

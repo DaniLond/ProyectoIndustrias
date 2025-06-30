@@ -47,7 +47,6 @@ function ProductPage() {
 		setVisibleErrors((prevErrors) => prevErrors.filter((_, i) => i !== index));
 	};
 
-	// --- CONFIGURACIÓN DE LA TABLA DE PRODUCTOS ---
 	const columns = [
 		{ name: 'PRODUCTO', uid: 'name', sortable: true },
 		{ name: 'PRECIO DE VENTA', uid: 'sales_price', sortable: true },
@@ -135,6 +134,7 @@ function ProductPage() {
 				handleCreate={handleCreate}
 				Modal={ProductForm}
 				renderCell={renderCell}
+				filterProperty="name"
 			/>
 			{isModalOpen && <ProductForm isOpen={isModalOpen} onClose={handleModalClose} initialData={selectedProduct} />}
 		</DefaultLayout>

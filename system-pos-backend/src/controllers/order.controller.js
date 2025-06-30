@@ -112,3 +112,26 @@ export const deleteProductFromOrder = async (req, res, next) => {
 		if (connection) connection.release();
 	}
 };
+
+export const updateOrderState = async (req, res, next) => {
+	const { id } = req.params;
+	const { newState } = req.body;
+
+	let connection;
+
+	try {
+		connection = await connectDB();
+
+		await Order.updateOrderState(connection, id, newState);
+
+		res.status(200).json({
+			message: 'Estado de la orden actualizado exitosamente',
+			orderId: id,
+			newState: newState,
+		});
+	} catch (error) {
+		next(error);
+	} finally {
+		if (connection) connection.release();
+	}
+};

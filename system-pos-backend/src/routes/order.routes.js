@@ -1,5 +1,13 @@
 import { Router } from 'express';
-import { getOrders, getOrderById, getProductToOrder, createOrder, updateOrder, deleteProductFromOrder } from '../controllers/order.controller.js';
+import {
+	getOrders,
+	getOrderById,
+	getProductToOrder,
+	createOrder,
+	updateOrder,
+	deleteProductFromOrder,
+	updateOrderState,
+} from '../controllers/order.controller.js';
 
 const router = Router();
 
@@ -7,8 +15,9 @@ const router = Router();
 router.get('/orders', getOrders);
 router.get('/orders/:id', getOrderById);
 router.post('/create-order', createOrder);
-router.put('/edit-order/:id', updateOrder); 
+router.put('/edit-order/:id', updateOrder);
 router.delete('/delete-product/:id', deleteProductFromOrder);
 router.get('/orders/:id/products', getProductToOrder);
+router.put('/orders/:id/state', updateOrderState);
 
 export default router;

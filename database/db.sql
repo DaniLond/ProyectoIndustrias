@@ -1,27 +1,56 @@
 DROP DATABASE IF EXISTS system_pos_db;
 CREATE DATABASE system_pos_db;
 USE system_pos_db;
--- Crear tabla para los usuarios del sistema
+
+-- ========================================
+-- TABLAS PRINCIPALES
+-- ========================================
+
+-- Tabla para los usuarios del sistema
 CREATE TABLE USERS (
-    id INT PRIMARY KEY,
+    id VARCHAR(20) PRIMARY KEY,
     username VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
--- Tablas
-
-CREATE TABLE STATES(
-    state_name VARCHAR(50) PRIMARY KEY
-);
-
-CREATE TABLE WORK_TYPES(
+-- Tabla para los tipos de trabajos
+CREATE TABLE WORK_TYPES (
     type VARCHAR(50) PRIMARY KEY
 );
 
-CREATE TABLE CLIENTS(
+-- Tabla para los productos (salas)
+CREATE TABLE PRODUCTS (
+    name VARCHAR(100) PRIMARY KEY,
+    sales_price INT NOT NULL,
+    image_route VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla para las tarifas de los productos
+CREATE TABLE RATES (
+    work_type_id VARCHAR(50) NOT NULL,
+    product_id VARCHAR(100) NOT NULL,
+    cost INT NOT NULL,
+    PRIMARY KEY (work_type_id, product_id),
+    FOREIGN KEY (work_type_id) REFERENCES WORK_TYPES (type) ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES PRODUCTS (name) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- Tabla para los empleados
+CREATE TABLE EMPLOYEES (
+    id VARCHAR(20) PRIMARY KEY,
+    name VARCHAR(80) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    address TEXT,
+    FOREIGN KEY (role) REFERENCES WORK_TYPES(type)
+);
+
+-- Tabla para los clientes
+CREATE TABLE CLIENTS (
     id VARCHAR(20) PRIMARY KEY,
     client_name VARCHAR(80) NOT NULL,
     email VARCHAR(100),
@@ -30,14 +59,13 @@ CREATE TABLE CLIENTS(
     city VARCHAR(50)
 );
 
-CREATE TABLE PRODUCTS (
-	name VARCHAR(100) PRIMARY KEY,
-	sales_price INT NOT NULL,
-	image_route VARCHAR(255),
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Tabla para los estados
+CREATE TABLE STATES (
+    state_name VARCHAR(50) PRIMARY KEY
 );
 
-CREATE TABLE ORDERS(
+-- Tabla para las órdenes
+CREATE TABLE ORDERS (
     id INT AUTO_INCREMENT PRIMARY KEY,
     detail TEXT,
     client VARCHAR(20) NOT NULL,
@@ -48,7 +76,112 @@ CREATE TABLE ORDERS(
     FOREIGN KEY (client) REFERENCES CLIENTS(id),
     FOREIGN KEY (id_state) REFERENCES STATES(state_name)
 );
+
+-- Tabla para los detalles de órdenes
+CREATE TABLE ORDER_DETAIL (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    product VARCHAR(100) NOT NULL,
+    description TEXT,
+    state VARCHAR(50) NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES ORDERS(id),
+    FOREIGN KEY (product) REFERENCES PRODUCTS(name),
+    FOREIGN KEY (state) REFERENCES STATES(state_name)
+);
+
+-- Tabla temporal para almacenar los productos del pedido
+CREATE TABLE TEMP_ORDER_PRODUCTS (
+    temp_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_name VARCHAR(100),
+    detail TEXT
+);
+
+-- Tabla para las tarjetas de trabajo
+CREATE TABLE CARD (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_detail_id INT NOT NULL,
+    work_type VARCHAR(50) NOT NULL,
+    employee_id VARCHAR(20),
+    state VARCHAR(50) NOT NULL DEFAULT 'Pendiente',
+    date_assigned DATE,
+    date_completed DATE,
+    FOREIGN KEY (order_detail_id) REFERENCES ORDER_DETAIL(id),
+    FOREIGN KEY (work_type) REFERENCES WORK_TYPES(type),
+    FOREIGN KEY (employee_id) REFERENCES EMPLOYEES(id),
+    FOREIGN KEY (state) REFERENCES STATES(state_name)
+);
+
+-- Tabla para los pagos
+CREATE TABLE PAYMENTS (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id VARCHAR(20) NOT NULL,
+    amount INT,
+    date_paid DATE,
+    FOREIGN KEY (employee_id) REFERENCES EMPLOYEES(id)
+);
+
+-- Tabla para los conceptos de pago
+CREATE TABLE CONCEPTS (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    concept_name VARCHAR(100) NOT NULL,
+    value INT
+);
+
+-- Tabla para relacionar pagos con conceptos
+CREATE TABLE PAYMENT_CONCEPTS (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    payment_id INT NOT NULL,
+    concept_id INT NOT NULL,
+    FOREIGN KEY (payment_id) REFERENCES PAYMENTS(id),
+    FOREIGN KEY (concept_id) REFERENCES CONCEPTS(id)
+);
+
+-- Tabla para las dependencias de trabajo
+CREATE TABLE WORK_DEPENDENCIES (
+    work_type VARCHAR(50) NOT NULL,
+    depends_on VARCHAR(50) NOT NULL,
+    PRIMARY KEY (work_type, depends_on),
+    FOREIGN KEY (work_type) REFERENCES WORK_TYPES(type),
+    FOREIGN KEY (depends_on) REFERENCES WORK_TYPES(type)
+);
+
+-- ========================================
+-- TRIGGERS
+-- ========================================
+
+-- Trigger para insertar tarifas automáticamente cuando se crea un producto
 DELIMITER //
+CREATE TRIGGER insert_rates
+AFTER INSERT ON PRODUCTS
+FOR EACH ROW
+BEGIN
+    DECLARE work_type_id VARCHAR(50);
+    DECLARE flag BOOLEAN DEFAULT false;
+    -- Cursor para recorrer todos los tipos de trabajo
+    DECLARE work_types_cursor CURSOR FOR SELECT type FROM WORK_TYPES;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET flag = true;
+    
+    -- Abrir el cursor
+    OPEN work_types_cursor;
+    
+    -- Bucle para recorrer todos los tipos de trabajo e insertar tarifas
+    fetch_loop: LOOP
+        FETCH work_types_cursor INTO work_type_id;
+        -- Salir del bucle si no hay más filas
+        IF flag THEN
+            LEAVE fetch_loop;
+        END IF;
+        -- Insertar tarifa para el tipo de trabajo y producto
+        INSERT INTO RATES (work_type_id, product_id, cost)
+        VALUES (work_type_id, NEW.name, 0);
+    END LOOP fetch_loop;
+    
+    -- Cerrar el cursor
+    CLOSE work_types_cursor;
+END;
+//
+
+-- Trigger para insertar orden
 CREATE TRIGGER insert_order
 AFTER INSERT ON ORDERS
 FOR EACH ROW
@@ -69,36 +202,102 @@ BEGIN
             LEAVE get_product;
         END IF;
         
-        -- Insertar en ORDER_DETAIL por cada producto en TEMP_ORDER_PRODUCTS
         INSERT INTO ORDER_DETAIL (order_id, product, description, state)
         VALUES (NEW.id, temp_product_name, temp_detail, 'Pendiente');
     END LOOP get_product;
 
     CLOSE temp_cursor;
 
-    -- Limpiar la tabla temporal
     DELETE FROM TEMP_ORDER_PRODUCTS;
 END;
 //
 
+-- Trigger para crear tarjetas de trabajo
+CREATE TRIGGER create_cards
+AFTER INSERT ON ORDER_DETAIL
+FOR EACH ROW
+BEGIN
+    INSERT INTO CARD (order_detail_id, work_type, state)
+    SELECT NEW.id, type, 'Pendiente'
+    FROM WORK_TYPES
+    WHERE type IN ('Corte de Tela', 'Corte de Madera', 'Costura', 'Tapiceria', 'Ensamblado');
+END;
+//
 
-CREATE TABLE ORDER_DETAIL(
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    order_id INT NOT NULL,
-    product VARCHAR(100) NOT NULL,
-    description TEXT,
-    state VARCHAR(50) NOT NULL,
-    FOREIGN KEY (order_id) REFERENCES ORDERS(id),
-    FOREIGN KEY (product) REFERENCES PRODUCTS(name),
-    FOREIGN KEY (state) REFERENCES STATES(state_name)
-);
+-- Trigger para actualizar estado al asignar empleado
+CREATE TRIGGER update_order_state_on_assignment
+AFTER UPDATE ON CARD
+FOR EACH ROW
+BEGIN
+    IF OLD.employee_id IS NULL AND NEW.employee_id IS NOT NULL THEN
+        
+        UPDATE ORDER_DETAIL
+        SET state = 'En progreso'
+        WHERE id = NEW.order_detail_id 
+        AND state = 'Pendiente';
 
---Tabla temporal para almacenar los productos del pedido
-CREATE TABLE TEMP_ORDER_PRODUCTS (
-    temp_id INT AUTO_INCREMENT PRIMARY KEY,
-    product_name VARCHAR(100),
-    detail TEXT
-);
+        UPDATE ORDERS
+        SET id_state = 'En progreso'
+        WHERE id = (
+            SELECT od.order_id
+            FROM ORDER_DETAIL od
+            WHERE od.id = NEW.order_detail_id
+        ) AND id_state = 'Pendiente';
+        
+    END IF;
+END;
+//
+
+-- Trigger para actualizar estados al completar tareas
+CREATE TRIGGER update_states_on_task_completion
+AFTER UPDATE ON CARD
+FOR EACH ROW
+BEGIN
+    DECLARE order_detail_id_var INT;
+    DECLARE order_id_var INT;
+    DECLARE pending_cards_for_detail INT DEFAULT 0;
+    DECLARE pending_details_for_order INT DEFAULT 0;
+    
+    IF NEW.state = 'Completado' AND OLD.state != 'Completado' THEN
+
+        SET order_detail_id_var = NEW.order_detail_id;
+
+        SELECT od.order_id INTO order_id_var
+        FROM ORDER_DETAIL od
+        WHERE od.id = order_detail_id_var;
+
+        SELECT COUNT(*) INTO pending_cards_for_detail
+        FROM CARD c
+        WHERE c.order_detail_id = order_detail_id_var
+        AND c.state != 'Completado';
+
+        IF pending_cards_for_detail = 0 THEN
+            UPDATE ORDER_DETAIL
+            SET state = 'Completado'
+            WHERE id = order_detail_id_var;
+
+            SELECT COUNT(*) INTO pending_details_for_order
+            FROM ORDER_DETAIL od
+            WHERE od.order_id = order_id_var
+            AND od.state != 'Completado';
+
+            IF pending_details_for_order = 0 THEN
+                UPDATE ORDERS
+                SET id_state = 'Completado'
+                WHERE id = order_id_var;
+            END IF;
+        END IF;
+    END IF;
+END;
+//
+
+DELIMITER ;
+
+-- ========================================
+-- PROCEDIMIENTOS ALMACENADOS
+-- ========================================
+
+-- Procedimiento para agregar productos temporales
 DELIMITER //
 CREATE PROCEDURE add_temp_product(IN p_product_name VARCHAR(100), IN p_detail TEXT)
 BEGIN
@@ -107,117 +306,168 @@ BEGIN
 END;
 //
 
+-- Procedimiento para obtener tareas disponibles por tipo de trabajo
+CREATE PROCEDURE GetAvailableTasksByWorkTypeOptimized(IN work_type_param VARCHAR(50))
+BEGIN
+    SELECT 
+        c.id,
+        c.order_detail_id,
+        od.product,
+        od.description as order_detail_description,
+        o.id as order_id,
+        o.delivery_date,
+        o.date_realization,
+        o.detail as order_detail,
+        cl.client_name,
+        cl.phone,
+        cl.address as client_address
+    FROM CARD c
+    JOIN ORDER_DETAIL od ON c.order_detail_id = od.id
+    JOIN ORDERS o ON od.order_id = o.id
+    JOIN CLIENTS cl ON o.client = cl.id
+    WHERE 
+        c.work_type = work_type_param 
+        AND c.state = 'Pendiente' 
+        AND c.employee_id IS NULL
+        AND (
+            NOT EXISTS (
+                SELECT 1 FROM WORK_DEPENDENCIES wd 
+                WHERE wd.work_type = work_type_param
+            )
+            OR
+            NOT EXISTS (
+                SELECT 1 
+                FROM WORK_DEPENDENCIES wd
+                JOIN CARD c_dep ON c_dep.order_detail_id = c.order_detail_id 
+                    AND c_dep.work_type = wd.depends_on
+                WHERE wd.work_type = work_type_param 
+                    AND c_dep.state != 'Completado'
+            )
+        )
+    ORDER BY o.date_realization DESC, o.id DESC;
+END //
 
+DELIMITER ;
 
+-- ========================================
+-- ÍNDICES PARA OPTIMIZACIÓN
+-- ========================================
 
-CREATE TABLE EMPLOYEES(
-    id VARCHAR(20) PRIMARY KEY,
-    name VARCHAR(80) NOT NULL,
-    role VARCHAR(50) NOT NULL,
-    email VARCHAR(100),
-    phone VARCHAR(20),
-    address TEXT,
-    FOREIGN KEY (role) REFERENCES WORK_TYPES(type)
-);
+CREATE INDEX idx_card_work_type_state ON CARD(work_type, state, employee_id);
+CREATE INDEX idx_card_detail_state ON CARD(order_detail_id, work_type, state);
+CREATE INDEX idx_work_dependencies ON WORK_DEPENDENCIES(work_type, depends_on);
 
-CREATE TABLE CARD(
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    order_detail_id INT,
-    employee_id VARCHAR(20) NOT NULL,
-    state VARCHAR(50),
-    date_assignment DATE NOT NULL,
-    date_completed DATE,
-    FOREIGN KEY (order_detail_id) REFERENCES ORDER_DETAIL(id),
-    FOREIGN KEY (employee_id) REFERENCES EMPLOYEES(id),
-    FOREIGN KEY (state) REFERENCES STATES(state_name)
-);
+-- ========================================
+-- DATOS INICIALES
+-- ========================================
 
-CREATE TABLE RATES (
-	work_type_id VARCHAR(50) NOT NULL,
-	product_id VARCHAR(100) NOT NULL,
-	cost INT NOT NULL,
-	PRIMARY KEY (work_type_id, product_id),
-	FOREIGN KEY (work_type_id) REFERENCES WORK_TYPES (type) ON UPDATE CASCADE ON DELETE CASCADE,
-	FOREIGN KEY (product_id) REFERENCES PRODUCTS (name) ON UPDATE CASCADE ON DELETE CASCADE
-);
+-- USUARIOS
+INSERT INTO USERS (id, username, password, email)
+VALUES (
+        '12345',
+        'admin',
+        '$2a$10$fW.n0oZiX7CCXuYAs2y8HexYepdsfdMoQTQujFnldmzHr7i3VI9L.',
+        'admin@gmail.com'
+    );
 
-CREATE TABLE PAYMENTS(
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    employee_id VARCHAR(20) NOT NULL,
-    amount INT,
-    date_paid DATE,
-    FOREIGN KEY (employee_id) REFERENCES EMPLOYEES(id)
-);
-
-CREATE TABLE CONCEPTS(
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    concept_name VARCHAR(100) NOT NULL,
-    value INT
-);
-
-CREATE TABLE  PAYMENT_CONCEPTS(
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    payment_id INT NOT NULL,
-    concept_id INT NOT NULL,
-    FOREIGN KEY (payment_id) REFERENCES PAYMENTS(id),
-    FOREIGN KEY (concept_id) REFERENCES CONCEPTS(id)
-);
-
-
--- USERS
-INSERT INTO USERS (id, username, password, email) VALUES
-(1006 'admin', 'admin123', 'admin@gmail.com'),
-(1007, 'client', 'client123', 'client@gmal.com');
-
--- STATES
+-- ESTADOS
 INSERT INTO STATES (state_name) VALUES
-('Pendiente'), ('En Progreso'), ('Completado'), ('Cancelado'),('Corte tela'),('Costura'),('Corte madera'),('Armado'),('Tapicería');
+('Pendiente'), ('En progreso'), ('Completado'), ('Cancelado');
 
--- TYPE_OF_WORK
-INSERT INTO TYPE_OF_WORK (type_name) VALUES
-('Corte de Madera'), ('Corte de Tela'), ('Costura'), ('Tapicería'), ('Armado');
+-- TIPOS DE TRABAJO
+INSERT INTO WORK_TYPES (type) VALUES
+('Corte de Madera'), ('Corte de Tela'), ('Costura'), ('Tapiceria'), ('Ensamblado');
 
+-- DEPENDENCIAS DE TRABAJO
+INSERT INTO WORK_DEPENDENCIES (work_type, depends_on) VALUES
+('Costura', 'Corte de Tela'),
+('Ensamblado', 'Corte de Madera'),
+('Tapiceria', 'Costura'),
+('Tapiceria', 'Ensamblado');
 
--- CLIENTS
+-- CLIENTES
 INSERT INTO CLIENTS (id, client_name, email, phone, address, city) VALUES
 ('1001', 'Juan Pérez', 'juan@email.com', '3014836689', 'Calle 45 # 25 - 38', 'Palmira'),
 ('1002', 'María García', 'maria@email.com', '3008506234', 'Calle 50 # 30 - 38', 'Cali'),
 ('1003', 'Isabel Castillo', 'isabel@email.com', '3008502224', 'Carrera 34 # 30 - 08', 'Cali'),
-('1004', 'Esteban Morales', 'esteban@email.com', '3008506234', 'Calle 30 # 01 - 18', 'Bogota'),
-('1005', 'Valentina Lopez', 'valen@email.com', '3050206234', 'Calle 50 # 12 - 08', 'Palmira');
+('1004', 'Esteban Morales', 'esteban@email.com', '3008506234', 'Calle 30 # 01 - 18', 'Bogotá'),
+('1005', 'Valentina López', 'valen@email.com', '3050206234', 'Calle 50 # 12 - 08', 'Palmira');
 
--- PRODUCTS
-INSERT INTO PRODUCTS (products_name, wood_cut_price, fabric_cut_price, sewing_price, price_upholsterer, assembled_price, sales_price, image_route) VALUES
-('Sofá Cama', 102000, 6500, 20000, 52000, 83000, 520000, ''),
-('Sala Mavery', 98000, 4500, 35000, 80000, 95000, 1100000, ''),
-('Sala Napoles', 75000, 6500, 30000, 75000, 82000, 950000, ''),
-('Silla de Comedor', 50000, 2500, 2500, 15000, 45000, 120000, ''),
-('Sala Mariposa', 100000, 6000, 25000, 65000, 90000, 1000000, '');
+-- PRODUCTOS
+INSERT INTO PRODUCTS (name, sales_price, image_route) VALUES
+('Sofá Cama', 520000, ''),
+('Sala Mavery', 1100000, ''),
+('Sala Nápoles', 950000, ''),
+('Silla de Comedor', 120000, ''),
+('Sala Mariposa', 1000000, '');
 
--- ORDERS
-INSERT INTO ORDERS (detail, client, date_realization, delivery_date, address, id_state) VALUES
-('Se debe entregar antes de las 2', '1001', '2024-08-01', '2024-08-15', 'Calle 45 # 25 - 38', 'Pediente'),
-('', '1002', '2024-08-02', '2024-08-20', 'Carrera 25 # 18 - 45', 'Pendiente'),
-('', '1001', '2024-08-03', '2024-08-18', 'Calle 45 # 25 - 38', 'Pendiente'),
-('Es en un tercer piso', '1004', '2024-08-04', '2024-08-25', 'Calle 50 # 03 - 25', 'Pendiente'),
-('', '1005', '2024-09-05', '2024-09-15', 'Calle 50 # 12 - 08', 'Pendiente');
+-- Actualizar las tarifas de los productos según los tipos de trabajo
+-- Sofá Cama
+UPDATE RATES
+SET cost = CASE
+        WHEN work_type_id = 'Corte de Madera' THEN 102000
+        WHEN work_type_id = 'Corte de Tela' THEN 6500
+        WHEN work_type_id = 'Costura' THEN 20000
+        WHEN work_type_id = 'Tapiceria' THEN 52000
+        WHEN work_type_id = 'Ensamblado' THEN 83000
+        ELSE cost
+    END
+WHERE product_id = 'Sofá Cama';
+-- Sala Mavery
+UPDATE RATES
+SET cost = CASE
+        WHEN work_type_id = 'Corte de Madera' THEN 98000
+        WHEN work_type_id = 'Corte de Tela' THEN 4500
+        WHEN work_type_id = 'Costura' THEN 35000
+        WHEN work_type_id = 'Tapiceria' THEN 80000
+        WHEN work_type_id = 'Ensamblado' THEN 95000
+        ELSE cost
+    END
+WHERE product_id = 'Sala Mavery';
+-- Sala Napoles
+UPDATE RATES
+SET cost = CASE
+        WHEN work_type_id = 'Corte de Madera' THEN 75000
+        WHEN work_type_id = 'Corte de Tela' THEN 6500
+        WHEN work_type_id = 'Costura' THEN 30000
+        WHEN work_type_id = 'Tapiceria' THEN 75000
+        WHEN work_type_id = 'Ensamblado' THEN 82000
+        ELSE cost
+    END
+WHERE product_id = 'Sala Napoles';
+-- Silla de Comedor
+UPDATE RATES
+SET cost = CASE
+        WHEN work_type_id = 'Corte de Madera' THEN 50000
+        WHEN work_type_id = 'Corte de Tela' THEN 2500
+        WHEN work_type_id = 'Costura' THEN 2500
+        WHEN work_type_id = 'Tapiceria' THEN 15000
+        WHEN work_type_id = 'Ensamblado' THEN 45000
+        ELSE cost
+    END
+WHERE product_id = 'Silla de Comedor';
+-- Sala Mariposa
+UPDATE RATES
+SET cost = CASE
+        WHEN work_type_id = 'Corte de Madera' THEN 100000
+        WHEN work_type_id = 'Corte de Tela' THEN 6000
+        WHEN work_type_id = 'Costura' THEN 25000
+        WHEN work_type_id = 'Tapiceria' THEN 65000
+        WHEN work_type_id = 'Ensamblado' THEN 90000
+        ELSE cost
+    END
+WHERE product_id = 'Sala Mariposa';
 
-
--- ORDER_DETAIL
-INSERT INTO ORDER_DETAIL (order_id, products_id, quantity, description, state_id) VALUES
-(1, 1, 1, 'Sofá cama color azul', 'Pendiente'),
-(2, 2, 2, 'Una Sala Mavery color beige y la otra negra', 'Pendiente'),
-(3, 3, 1, 'Sala Napoles de color beige', 'Pendiente'),
-(4, 4, 4, 'Sillas de Comedor tapizadas en gris', 'Pendiente'),
-(5, 5, 1, 'Sala mariposa toda negra', 'Pendiente'),
-(1, 2, 1, 'Una Sala Mavery color beige', 'Pendiente'),
-(2, 5, 2, 'Una Sala Mariposa color beige y la otra negra', 'Pendiente');
-
--- EMPLOYEES
+-- EMPLEADOS
 INSERT INTO EMPLOYEES (id, name, role, email, phone, address) VALUES
 ('2001', 'Carlos Rodríguez', 'Corte de Madera', 'carlos@email.com', '3008053098', 'Carrera 26 # 48 - 50'),
 ('2002', 'Ana Martínez', 'Costura', 'ana@email.com', '3008053011', 'Carrera 50 # 08 - 50'),
 ('2003', 'Pedro Sánchez', 'Tapiceria', 'pedro@email.com', '3022053098', 'Carrera 35 # 40 - 10'),
 ('2004', 'Laura Torres', 'Corte de Tela', 'laura@email.com', '3005054018', 'Carrera 50 # 35 - 58'),
-('2005', 'Jorge Mendez', 'Ensamblado', 'jorge@email.com', '3018053333', 'Calle 30 # 08 - 50');
+('2005', 'Jorge Méndez', 'Ensamblado', 'jorge@email.com', '3018053333', 'Calle 30 # 08 - 50');
 
+-- CONCEPTOS DE PAGO
+INSERT INTO CONCEPTS (concept_name, value) VALUES
+('Pago por tarea completada', 0),
+('Bono por productividad', 0),
+('Descuento por tardanza', 0);

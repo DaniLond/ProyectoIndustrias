@@ -44,6 +44,7 @@ export function ProductProvider({ children }) {
 		try {
 			const res = await createProductRequest(product);
 			if (res.statusCode === 201) setProducts([...products, product]);
+			await getProducts();
 		} catch (error) {
 			const errorMessage = error.response.data.message || [error.response.data.error];
 			setErrors(errorMessage);
@@ -54,6 +55,7 @@ export function ProductProvider({ children }) {
 		try {
 			const res = await updateProductRequest(name, product);
 			if (res.statusCode === 200) setProducts(products.map((p) => (p.name === name ? product : p)));
+			await getProducts();
 		} catch (error) {
 			const errorMessage = error.response.data.message || [error.response.data.error];
 			setErrors(errorMessage);
@@ -64,6 +66,7 @@ export function ProductProvider({ children }) {
 		try {
 			const res = await deleteProductRequest(name);
 			if (res.status === 204) setProducts(products.filter((p) => p.name !== name));
+			await getProducts();
 		} catch (error) {
 			const errorMessage = error.response.data.message || [error.response.data.error];
 			setErrors(errorMessage);

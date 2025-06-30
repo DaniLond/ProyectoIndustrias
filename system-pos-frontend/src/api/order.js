@@ -11,3 +11,6 @@ export const updateOrderRequest = async (id, order) => axios.put(`/edit-order/${
 export const deleteProductFromOrderRequest = async (id) => axios.delete(`/delete-product/${id}`);
 
 export const getProductsByOrderIdRequest = async (id) => axios.get(`/orders/${id}/products`);
+
+export const updateOrderStateRequest = async (id, newState) => 
+    axios.put(`/orders/${id}/state`, { newState });
