@@ -7,6 +7,7 @@ import {
 	updateOrder,
 	deleteProductFromOrder,
 	updateOrderState,
+	updateOrderDetailState,
 } from '../controllers/order.controller.js';
 
 const router = Router();
@@ -19,5 +20,6 @@ router.put('/edit-order/:id', updateOrder);
 router.delete('/delete-product/:id', deleteProductFromOrder);
 router.get('/orders/:id/products', getProductToOrder);
 router.put('/orders/:id/state', updateOrderState);
+router.put('/order-detail/:id/state', updateOrderDetailState);
 
 export default router;

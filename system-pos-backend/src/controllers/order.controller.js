@@ -135,3 +135,27 @@ export const updateOrderState = async (req, res, next) => {
 		if (connection) connection.release();
 	}
 };
+
+export const updateOrderDetailState = async (req, res, next) => {
+	const { id } = req.params;
+	const { isDispatched } = req.body;
+
+	let connection;
+
+	try {
+		connection = await connectDB();
+
+		const result = await Order.updateOrderDetailState(connection, id, isDispatched);
+		const newState = isDispatched ? 'Despachado' : 'Completado';
+
+		res.status(200).json({
+			message: result.message,
+			orderDetailId: id,
+			newState: newState,
+		});
+	} catch (error) {
+		next(error);
+	} finally {
+		if (connection) connection.release();
+	}
+};

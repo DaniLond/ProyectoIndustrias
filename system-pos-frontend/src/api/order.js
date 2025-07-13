@@ -14,3 +14,6 @@ export const getProductsByOrderIdRequest = async (id) => axios.get(`/orders/${id
 
 export const updateOrderStateRequest = async (id, newState) => 
     axios.put(`/orders/${id}/state`, { newState });
+
+export const updateOrderDetailStateRequest = async (orderDetailId, isDispatched) =>
+	axios.put(`/order-detail/${orderDetailId}/state`, { isDispatched });

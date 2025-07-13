@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { 
-  Modal, 
-  ModalContent, 
-  ModalHeader, 
-  ModalBody, 
-  ModalFooter, 
+import React, { useState, useEffect } from 'react';
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
   Button,
   Table,
   TableHeader,
@@ -13,7 +13,8 @@ import {
   TableRow,
   TableCell,
   Chip,
-  Tooltip
+  Tooltip,
+  Checkbox
 } from '@nextui-org/react';
 import { FaEye } from 'react-icons/fa';
 import { useOrder } from '../../context/OrderContext';
@@ -24,8 +25,21 @@ const ViewProductModal = ({ isOpen, onClose, products }) => {
   const [selectedProductTasks, setSelectedProductTasks] = useState([]);
   const [selectedProductName, setSelectedProductName] = useState('');
   const [selectedProductStatus, setSelectedProductStatus] = useState('');
-  
-  const { getOrderDetailTasks } = useOrder();
+  const [loadingStates, setLoadingStates] = useState({});
+
+  const [localProducts, setLocalProducts] = useState([]);
+
+  const { getOrderDetailTasks, updateOrderDetailState, orderProducts } = useOrder();
+
+  useEffect(() => {
+    if (products && products.length > 0) {
+      const updatedProducts = products.map(product => {
+        const contextProduct = orderProducts.find(p => p.id === product.id);
+        return contextProduct || product;
+      });
+      setLocalProducts(updatedProducts);
+    }
+  }, [products, orderProducts]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -35,6 +49,8 @@ const ViewProductModal = ({ isOpen, onClose, products }) => {
         return 'warning';
       case 'Pendiente':
         return 'danger';
+      case 'Despachado':
+        return 'primary';
       default:
         return 'default';
     }
@@ -52,10 +68,40 @@ const ViewProductModal = ({ isOpen, onClose, products }) => {
     }
   };
 
+  const handleDispatchChange = async (orderDetailId, isChecked) => {
+    setLoadingStates(prev => ({
+      ...prev,
+      [orderDetailId]: true
+    }));
+
+    try {
+      await updateOrderDetailState(orderDetailId, isChecked);
+
+      setLocalProducts(prev => prev.map(product => 
+        product.id === orderDetailId 
+          ? { ...product, state: isChecked ? 'Despachado' : 'Completado' }
+          : product
+      ));
+      
+    } catch (error) {
+      console.error('Error al actualizar estado:', error);
+      setLocalProducts(prev => prev.map(product => 
+        product.id === orderDetailId 
+          ? { ...product, state: !isChecked ? 'Despachado' : 'Completado' }
+          : product
+      ));
+    } finally {
+      setLoadingStates(prev => ({
+        ...prev,
+        [orderDetailId]: false
+      }));
+    }
+  };
+
   return (
     <>
-      <Modal 
-        isOpen={isOpen} 
+      <Modal
+        isOpen={isOpen}
         onClose={onClose}
         size="4xl"
         scrollBehavior="inside"
@@ -64,9 +110,9 @@ const ViewProductModal = ({ isOpen, onClose, products }) => {
           <ModalHeader>
             Productos de la Orden
           </ModalHeader>
-          
+         
           <ModalBody>
-            {products && products.length > 0 ? (
+            {localProducts && localProducts.length > 0 ? (
               <Table aria-label="Tabla de productos">
                 <TableHeader>
                   <TableColumn>PRODUCTO</TableColumn>
@@ -75,7 +121,7 @@ const ViewProductModal = ({ isOpen, onClose, products }) => {
                   <TableColumn>ACCIONES</TableColumn>
                 </TableHeader>
                 <TableBody>
-                  {products.map((product) => (
+                  {localProducts.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">
                         {product.product}
@@ -88,12 +134,25 @@ const ViewProductModal = ({ isOpen, onClose, products }) => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Chip 
-                          color={getStatusColor(product.state)} 
-                          variant="flat"
-                        >
-                          {product.state}
-                        </Chip>
+                        <div className="flex items-center gap-2">
+                          <Chip
+                            color={getStatusColor(product.state)}
+                            variant="flat"
+                          >
+                            {product.state}
+                          </Chip>
+                          <Checkbox
+                            isSelected={product.state === 'Despachado'}
+                            onValueChange={(isChecked) => handleDispatchChange(product.id, isChecked)}
+                            isDisabled={
+                              product.state === 'Pendiente' || 
+                              product.state === 'En progreso' || 
+                              loadingStates[product.id]
+                            }
+                            color="primary"
+                            size="sm"
+                          />
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Tooltip content="Ver tareas del producto">
@@ -118,11 +177,11 @@ const ViewProductModal = ({ isOpen, onClose, products }) => {
               </div>
             )}
           </ModalBody>
-          
+         
           <ModalFooter>
-            <Button 
-              color="primary" 
-              variant="light" 
+            <Button
+              color="primary"
+              variant="light"
               onPress={onClose}
             >
               Cerrar
@@ -130,7 +189,7 @@ const ViewProductModal = ({ isOpen, onClose, products }) => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
+      
       <TaskDetailModal
         isOpen={taskModalOpen}
         onClose={() => setTaskModalOpen(false)}

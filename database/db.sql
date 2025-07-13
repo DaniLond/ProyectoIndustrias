@@ -145,6 +145,14 @@ CREATE TABLE WORK_DEPENDENCIES (
     FOREIGN KEY (depends_on) REFERENCES WORK_TYPES(type)
 );
 
+CREATE TABLE PAID_CARDS (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    payment_id INT NOT NULL,
+    card_id INT NOT NULL,
+    FOREIGN KEY (payment_id) REFERENCES PAYMENTS(id),
+    FOREIGN KEY (card_id) REFERENCES CARD(id),
+    UNIQUE KEY unique_card_payment (card_id, payment_id)
+);
 -- ========================================
 -- TRIGGERS
 -- ========================================
@@ -347,6 +355,284 @@ BEGIN
     ORDER BY o.date_realization DESC, o.id DESC;
 END //
 
+-- Procedimiento para obtener tareas completadas por empleado en un rango de fechas
+CREATE PROCEDURE GetCompletedTasksByEmployeeAndDateRange(
+    IN employee_id_param VARCHAR(20),
+    IN start_date_param DATE,
+    IN end_date_param DATE
+)
+BEGIN
+    SELECT
+        c.id AS card_id,
+        c.work_type,
+        c.date_completed,
+        od.product,
+        od.description AS order_description,
+        o.id AS order_id,
+        o.date_realization,
+        o.delivery_date,
+        cl.client_name,
+        r.cost AS task_cost,
+        e.name AS employee_name,
+        e.role AS employee_role
+    FROM CARD c
+    JOIN ORDER_DETAIL od ON c.order_detail_id = od.id
+    JOIN ORDERS o ON od.order_id = o.id
+    JOIN CLIENTS cl ON o.client = cl.id
+    JOIN EMPLOYEES e ON c.employee_id = e.id
+    JOIN RATES r ON r.work_type_id = c.work_type AND r.product_id = od.product
+    WHERE
+        c.employee_id = employee_id_param
+        AND c.state = 'Completado'
+        AND c.date_completed BETWEEN start_date_param AND end_date_param
+        AND c.id NOT IN (
+            SELECT DISTINCT pc.card_id 
+            FROM PAID_CARDS pc
+            JOIN PAYMENTS p ON pc.payment_id = p.id
+            WHERE p.employee_id = employee_id_param
+        )
+    ORDER BY c.date_completed DESC, o.id DESC;
+END //
+
+-- Procedimiento para calcular el total de pagos por empleado en un rango de fechas
+CREATE PROCEDURE CalculateEmployeePayment(
+    IN employee_id_param VARCHAR(20),
+    IN start_date_param DATE,
+    IN end_date_param DATE
+)
+BEGIN
+    SELECT 
+        employee_id_param as employee_id,
+        e.name as employee_name,
+        e.role as employee_role,
+        COUNT(c.id) as total_tasks,
+        COALESCE(SUM(r.cost), 0) as total_amount,
+        start_date_param as period_start,
+        end_date_param as period_end
+    FROM EMPLOYEES e
+    LEFT JOIN CARD c ON e.id = c.employee_id 
+        AND c.state = 'Completado'
+        AND c.date_completed BETWEEN start_date_param AND end_date_param
+        AND c.id NOT IN (
+            SELECT DISTINCT pc.card_id 
+            FROM PAID_CARDS pc
+            JOIN PAYMENTS p ON pc.payment_id = p.id
+            WHERE p.employee_id = employee_id_param
+        )
+    LEFT JOIN ORDER_DETAIL od ON c.order_detail_id = od.id
+    LEFT JOIN RATES r ON r.work_type_id = c.work_type AND r.product_id = od.product
+    WHERE e.id = employee_id_param
+    GROUP BY e.id, e.name, e.role;
+END //
+
+CREATE PROCEDURE CreatePaymentWithConcepts(
+    IN employee_id_param VARCHAR(20),
+    IN base_amount_param INT,
+    IN payment_date_param DATE,
+    IN concepts_json JSON,
+    IN paid_cards_json JSON
+)
+BEGIN
+    DECLARE payment_id INT;
+    DECLARE i INT DEFAULT 0;
+    DECLARE concept_count INT;
+    DECLARE card_count INT;
+    DECLARE concept_id INT;
+    DECLARE concept_value INT;
+    DECLARE card_id INT;
+    DECLARE final_amount INT DEFAULT base_amount_param;
+
+    SET concept_count = JSON_LENGTH(concepts_json);
+   
+    WHILE i < concept_count DO
+        SET concept_value = CAST(JSON_UNQUOTE(JSON_EXTRACT(concepts_json, CONCAT('$[', i, '].value'))) AS SIGNED);
+        SET final_amount = final_amount + concept_value;
+        SET i = i + 1;
+    END WHILE;
+
+    INSERT INTO PAYMENTS (employee_id, amount, date_paid)
+    VALUES (employee_id_param, final_amount, payment_date_param);
+   
+    SET payment_id = LAST_INSERT_ID();
+
+    INSERT INTO CONCEPTS (concept_name, value)
+    VALUES ('Trabajo Realizado', base_amount_param);
+   
+    INSERT INTO PAYMENT_CONCEPTS (payment_id, concept_id)
+    VALUES (payment_id, LAST_INSERT_ID());
+
+    SET i = 0;
+    WHILE i < concept_count DO
+        SET concept_id = JSON_UNQUOTE(JSON_EXTRACT(concepts_json, CONCAT('$[', i, '].concept_id')));
+       
+        IF concept_id IS NULL THEN
+            INSERT INTO CONCEPTS (concept_name, value)
+            VALUES (
+                JSON_UNQUOTE(JSON_EXTRACT(concepts_json, CONCAT('$[', i, '].name'))),
+                JSON_UNQUOTE(JSON_EXTRACT(concepts_json, CONCAT('$[', i, '].value')))
+            );
+            SET concept_id = LAST_INSERT_ID();
+        END IF;
+       
+        INSERT INTO PAYMENT_CONCEPTS (payment_id, concept_id)
+        VALUES (payment_id, concept_id);
+       
+        SET i = i + 1;
+    END WHILE;
+   
+    SET card_count = JSON_LENGTH(paid_cards_json);
+    SET i = 0;
+    
+    WHILE i < card_count DO
+        SET card_id = JSON_UNQUOTE(JSON_EXTRACT(paid_cards_json, CONCAT('$[', i, '].card_id')));
+        
+        INSERT INTO PAID_CARDS (payment_id, card_id)
+        VALUES (payment_id, card_id);
+        
+        SET i = i + 1;
+    END WHILE;
+
+    SELECT payment_id as created_payment_id, final_amount as total_amount;
+END //
+
+-- Procedimiento para obtener historial de pagos de un empleado
+CREATE PROCEDURE GetEmployeePaymentHistory(
+    IN employee_id_param VARCHAR(20),
+    IN limit_param INT DEFAULT 50,
+    IN offset_param INT DEFAULT 0
+)
+BEGIN
+    SELECT 
+        p.id as payment_id,
+        p.amount as total_amount,
+        p.date_paid,
+        e.name as employee_name,
+        e.role as employee_role,
+        COUNT(pc.concept_id) as total_concepts
+    FROM PAYMENTS p
+    JOIN EMPLOYEES e ON p.employee_id = e.id
+    LEFT JOIN PAYMENT_CONCEPTS pc ON p.id = pc.payment_id
+    WHERE p.employee_id = employee_id_param
+    GROUP BY p.id, p.amount, p.date_paid, e.name, e.role
+    ORDER BY p.date_paid DESC
+    LIMIT limit_param OFFSET offset_param;
+END //
+
+-- Procedimiento para obtener detalles de un pago específico
+CREATE PROCEDURE GetPaymentDetails(
+    IN payment_id_param INT
+)
+BEGIN
+    SELECT 
+        p.id as payment_id,
+        p.amount as total_amount,
+        p.date_paid,
+        e.id as employee_id,
+        e.name as employee_name,
+        e.role as employee_role,
+        c.id as concept_id,
+        c.concept_name,
+        c.value as concept_value
+    FROM PAYMENTS p
+    JOIN EMPLOYEES e ON p.employee_id = e.id
+    LEFT JOIN PAYMENT_CONCEPTS pc ON p.id = pc.payment_id
+    LEFT JOIN CONCEPTS c ON pc.concept_id = c.id
+    WHERE p.id = payment_id_param;
+END //
+
+-- Procedimiento para obtener conceptos disponibles
+CREATE PROCEDURE GetAvailableConcepts()
+BEGIN
+    SELECT 
+        id,
+        concept_name,
+        value,
+        CASE 
+            WHEN value >= 0 THEN 'bonus'
+            ELSE 'discount'
+        END as concept_type
+    FROM CONCEPTS
+    WHERE concept_name != 'Trabajo Realizado'
+    ORDER BY concept_name;
+END //
+
+-- Procedimiento para obtener productos pagados por payment_id
+CREATE PROCEDURE GetPaidProductsByPayment(
+    IN payment_id_param INT
+)
+BEGIN
+    SELECT
+        od.product,
+        r.cost,
+        c.work_type,
+        COUNT(*) as cantidad_tareas
+    FROM PAID_CARDS pc
+    JOIN CARD c ON pc.card_id = c.id
+    JOIN ORDER_DETAIL od ON c.order_detail_id = od.id
+    JOIN RATES r ON r.work_type_id = c.work_type AND r.product_id = od.product
+    WHERE pc.payment_id = payment_id_param
+    GROUP BY od.product, r.cost, c.work_type
+    ORDER BY od.product, c.work_type;
+END //
+
+-- Procedimiento para crear pago manual (cortadores)
+CREATE PROCEDURE CreateManualPayment(
+    IN employee_id_param VARCHAR(20),
+    IN manual_amount_param INT,
+    IN payment_date_param DATE,
+    IN start_date_param DATE,
+    IN end_date_param DATE,
+    IN concepts_json JSON
+)
+BEGIN
+    DECLARE payment_id INT;
+    DECLARE i INT DEFAULT 0;
+    DECLARE concept_count INT;
+    DECLARE concept_id INT;
+    DECLARE concept_value INT;
+    DECLARE final_amount INT DEFAULT manual_amount_param;
+    
+    SET concept_count = JSON_LENGTH(concepts_json);
+    
+    WHILE i < concept_count DO
+        SET concept_value = CAST(JSON_UNQUOTE(JSON_EXTRACT(concepts_json, CONCAT('$[', i, '].value'))) AS SIGNED);
+        SET final_amount = final_amount + concept_value;
+        SET i = i + 1;
+    END WHILE;
+    
+    INSERT INTO PAYMENTS (employee_id, amount, date_paid)
+    VALUES (employee_id_param, final_amount, payment_date_param);
+    
+    SET payment_id = LAST_INSERT_ID();
+
+    INSERT INTO CONCEPTS (concept_name, value)
+    VALUES (CONCAT('Pago Manual - ', start_date_param, ' al ', end_date_param), manual_amount_param);
+
+    INSERT INTO PAYMENT_CONCEPTS (payment_id, concept_id)
+    VALUES (payment_id, LAST_INSERT_ID());
+
+    SET i = 0;
+    WHILE i < concept_count DO
+        SET concept_id = JSON_UNQUOTE(JSON_EXTRACT(concepts_json, CONCAT('$[', i, '].concept_id')));
+        
+        IF concept_id IS NULL THEN
+            INSERT INTO CONCEPTS (concept_name, value)
+            VALUES (
+                JSON_UNQUOTE(JSON_EXTRACT(concepts_json, CONCAT('$[', i, '].name'))),
+                JSON_UNQUOTE(JSON_EXTRACT(concepts_json, CONCAT('$[', i, '].value')))
+            );
+            SET concept_id = LAST_INSERT_ID();
+        END IF;
+        
+        INSERT INTO PAYMENT_CONCEPTS (payment_id, concept_id)
+        VALUES (payment_id, concept_id);
+        
+        SET i = i + 1;
+    END WHILE;
+    
+    SELECT payment_id as created_payment_id, final_amount as total_amount;
+END //
+
 DELIMITER ;
 
 -- ========================================
@@ -372,7 +658,7 @@ VALUES (
 
 -- ESTADOS
 INSERT INTO STATES (state_name) VALUES
-('Pendiente'), ('En progreso'), ('Completado'), ('Cancelado');
+('Pendiente'), ('En progreso'), ('Completado'), ('Despachado');
 
 -- TIPOS DE TRABAJO
 INSERT INTO WORK_TYPES (type) VALUES
@@ -403,59 +689,58 @@ INSERT INTO PRODUCTS (name, sales_price, image_route) VALUES
 
 -- Actualizar las tarifas de los productos según los tipos de trabajo
 -- Sofá Cama
-UPDATE RATES
-SET cost = CASE
+UPDATE RATES SET cost = CASE 
         WHEN work_type_id = 'Corte de Madera' THEN 102000
         WHEN work_type_id = 'Corte de Tela' THEN 6500
         WHEN work_type_id = 'Costura' THEN 20000
         WHEN work_type_id = 'Tapiceria' THEN 52000
         WHEN work_type_id = 'Ensamblado' THEN 83000
-        ELSE cost
-    END
+        ELSE cost 
+    END 
 WHERE product_id = 'Sofá Cama';
+
 -- Sala Mavery
-UPDATE RATES
-SET cost = CASE
+UPDATE RATES SET cost = CASE 
         WHEN work_type_id = 'Corte de Madera' THEN 98000
         WHEN work_type_id = 'Corte de Tela' THEN 4500
         WHEN work_type_id = 'Costura' THEN 35000
         WHEN work_type_id = 'Tapiceria' THEN 80000
         WHEN work_type_id = 'Ensamblado' THEN 95000
-        ELSE cost
-    END
+        ELSE cost 
+    END 
 WHERE product_id = 'Sala Mavery';
+
 -- Sala Napoles
-UPDATE RATES
-SET cost = CASE
+UPDATE RATES SET cost = CASE 
         WHEN work_type_id = 'Corte de Madera' THEN 75000
         WHEN work_type_id = 'Corte de Tela' THEN 6500
         WHEN work_type_id = 'Costura' THEN 30000
         WHEN work_type_id = 'Tapiceria' THEN 75000
         WHEN work_type_id = 'Ensamblado' THEN 82000
-        ELSE cost
-    END
+        ELSE cost 
+    END 
 WHERE product_id = 'Sala Napoles';
+
 -- Silla de Comedor
-UPDATE RATES
-SET cost = CASE
+UPDATE RATES SET cost = CASE 
         WHEN work_type_id = 'Corte de Madera' THEN 50000
         WHEN work_type_id = 'Corte de Tela' THEN 2500
         WHEN work_type_id = 'Costura' THEN 2500
         WHEN work_type_id = 'Tapiceria' THEN 15000
         WHEN work_type_id = 'Ensamblado' THEN 45000
-        ELSE cost
-    END
+        ELSE cost 
+    END 
 WHERE product_id = 'Silla de Comedor';
+
 -- Sala Mariposa
-UPDATE RATES
-SET cost = CASE
+UPDATE RATES SET cost = CASE 
         WHEN work_type_id = 'Corte de Madera' THEN 100000
         WHEN work_type_id = 'Corte de Tela' THEN 6000
         WHEN work_type_id = 'Costura' THEN 25000
         WHEN work_type_id = 'Tapiceria' THEN 65000
-        WHEN work_type_id = 'Ensamblado' THEN 90000
-        ELSE cost
-    END
+        WHEN work_type_id = 'Ensamblado' THEN 60000
+        ELSE cost 
+    END 
 WHERE product_id = 'Sala Mariposa';
 
 -- EMPLEADOS
@@ -463,8 +748,13 @@ INSERT INTO EMPLOYEES (id, name, role, email, phone, address) VALUES
 ('2001', 'Carlos Rodríguez', 'Corte de Madera', 'carlos@email.com', '3008053098', 'Carrera 26 # 48 - 50'),
 ('2002', 'Ana Martínez', 'Costura', 'ana@email.com', '3008053011', 'Carrera 50 # 08 - 50'),
 ('2003', 'Pedro Sánchez', 'Tapiceria', 'pedro@email.com', '3022053098', 'Carrera 35 # 40 - 10'),
-('2004', 'Laura Torres', 'Corte de Tela', 'laura@email.com', '3005054018', 'Carrera 50 # 35 - 58'),
-('2005', 'Jorge Méndez', 'Ensamblado', 'jorge@email.com', '3018053333', 'Calle 30 # 08 - 50');
+('2004', 'Pedro Sánchez', 'Corte de Tela', 'laura@email.com', '3005054018', 'Carrera 50 # 35 - 58'),
+('2005', 'Jorge Méndez', 'Ensamblado', 'jorge@email.com', '3018053333', 'Calle 30 # 08 - 50'),
+('2006', 'María López', 'Corte de Madera', 'maria@email.com', '3012345678', 'Calle 10 # 20 - 30'),
+('2007', 'Juan Pérez', 'Costura', 'juan@email.com', '3023456789', 'Avenida 5 # 15 - 25'),
+('2008', 'Lucía Gómez', 'Tapiceria', 'lucia@email.com', '3034567890', 'Carrera 30 # 40 - 50'),
+('2009', 'Luis Rodríguez', 'Corte de Tela', 'luis@email.com', '3045678901', 'Calle 25 # 35 - 45'),
+('2010', 'Ana Sánchez', 'Ensamblado', 'ana.sanchez@email.com', '3056789012', 'Avenida 40 # 50 - 60');
 
 -- CONCEPTOS DE PAGO
 INSERT INTO CONCEPTS (concept_name, value) VALUES

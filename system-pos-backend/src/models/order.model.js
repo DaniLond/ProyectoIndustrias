@@ -104,7 +104,7 @@ export default class Order {
 	}
 
 	static async updateOrderState(connection, orderId, newState) {
-		const validStates = ['Pendiente', 'En progreso', 'Completado'];
+		const validStates = ['Pendiente', 'En progreso', 'Completado', 'Despachado'];
 		if (!validStates.includes(newState)) {
 			throw new Error('Estado no válido');
 		}
@@ -118,5 +118,13 @@ export default class Order {
 		const [rows] = await connection.query('SELECT id_state FROM ORDERS WHERE id = ?', [orderId]);
 
 		return rows[0]?.id_state;
+	}
+
+	static async updateOrderDetailState(connection, orderDetailId, isDispatched) {
+		const newState = isDispatched ? 'Despachado' : 'Completado';
+
+		await connection.query('UPDATE ORDER_DETAIL SET state = ? WHERE id = ?', [newState, orderDetailId]);
+
+		return { message: `Estado del producto actualizado a ${newState}` };
 	}
 }

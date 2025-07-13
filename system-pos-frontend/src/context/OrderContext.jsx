@@ -7,6 +7,7 @@ import {
 	getProductsByOrderIdRequest,
 	deleteProductFromOrderRequest,
 	updateOrderStateRequest,
+	updateOrderDetailStateRequest,
 } from '../api/order.js';
 
 import {
@@ -132,6 +133,24 @@ export const OrderProvider = ({ children }) => {
         }
     };
 
+	const updateOrderDetailState = async (orderDetailId, isDispatched) => {
+		try {
+			const response = await updateOrderDetailStateRequest(orderDetailId, isDispatched);
+			const newState = response.data.newState;
+	
+			setOrderProducts(orderProducts.map(product =>
+				product.id === orderDetailId
+					? { ...product, state: newState }
+					: product
+			));
+			
+		} catch (error) {
+			const errorMessage = error.response?.data?.message || 
+							   [error.response?.data?.error];
+			setErrors(errorMessage);
+		}
+	};
+
 	useEffect(() => {
 		if (errors.length > 0) {
 			const timer = setTimeout(() => {
@@ -156,6 +175,7 @@ export const OrderProvider = ({ children }) => {
 				deleteProductFromOrder,
 				getOrderProgress,
                 getOrderDetailTasks,
+				updateOrderDetailState
 			}}
 		>
 			{children}

@@ -85,7 +85,8 @@ function OrderPage() {
 	const orderStates = [
 		{ key: 'Pendiente', label: 'Pendiente' },
 		{ key: 'En progreso', label: 'En progreso' },
-		{ key: 'Completado', label: 'Completado' }
+		{ key: 'Completado', label: 'Completado' },
+		{ key: 'Despachado', label: 'Despachado' }
 	];
 
 	const columns = [
@@ -177,7 +178,7 @@ function OrderPage() {
 			<div className='p-2'>
 				<h2 className='text-gray-800 text-2xl font-bold'>Pedidos</h2>
 			</div>
-			{!isLoading && orders && orders.length > 0 && (
+			{!isLoading && (
 				<CustomTable
 					elements={orders}
 					name='pedidos'

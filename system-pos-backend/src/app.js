@@ -18,6 +18,7 @@ import clientRoutes from './routes/client.routes.js';
 import employeeRoutes from './routes/employee.routes.js';
 import OrderRoutes from './routes/order.routes.js';
 import taskRoutes from './routes/task.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
 
 // Configuración de las rutas
 app.use(authRoutes);
@@ -26,5 +27,6 @@ app.use(clientRoutes);
 app.use(employeeRoutes);
 app.use(OrderRoutes);
 app.use(taskRoutes);
+app.use(paymentRoutes);
 
 export default app;

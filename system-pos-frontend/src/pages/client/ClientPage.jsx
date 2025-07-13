@@ -107,7 +107,7 @@ function ClientPage() {
       <div className='p-2'>
         <h2 className='text-gray-800 text-2xl font-bold'>Clientes</h2>
       </div>
-      {!isLoading && clients && clients.length > 0 && (
+      {!isLoading && (
         <CustomTable
           elements={clients}
           name='clientes'

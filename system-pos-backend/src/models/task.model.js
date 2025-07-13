@@ -1,7 +1,6 @@
 export default class Task {
 	static async getPendingTasksByWorkType(connection, workType) {
 		const [rows] = await connection.query('CALL GetAvailableTasksByWorkTypeOptimized(?)', [workType]);
-
 		return rows[0] || [];
 	}
 
@@ -17,10 +16,39 @@ export default class Task {
 		return rows[0]?.role;
 	}
 
+	static async getEmployeeTasksWithDateFilter(connection, employeeId, startDate, endDate, dateFilterType) {
+		let query =
+			'SELECT c.id, c.date_assignment, c.state, c.date_completed, ' +
+			'od.product, od.description, od.order_id, cl.client_name, ' +
+			'e.name AS employee_name, e.role AS employee_role ' +
+			'FROM CARD c ' +
+			'JOIN ORDER_DETAIL od ON c.order_detail_id = od.id ' +
+			'JOIN ORDERS o ON od.order_id = o.id ' +
+			'JOIN CLIENTS cl ON o.client = cl.id ' +
+			'JOIN EMPLOYEES e ON c.employee_id = e.id ' +
+			'WHERE c.employee_id = ? ';
+
+		let params = [employeeId];
+
+		if (startDate && endDate) {
+			if (dateFilterType === 'assignment') {
+				query += 'AND c.date_assignment BETWEEN ? AND ? ';
+			} else if (dateFilterType === 'completion') {
+				query += 'AND c.date_completed BETWEEN ? AND ? ';
+			}
+			params.push(startDate, endDate);
+		}
+
+		query += 'ORDER BY c.date_assignment DESC';
+
+		const [rows] = await connection.query(query, params);
+		return rows;
+	}
+
 	static async getEmployeeTasks(connection, employeeId) {
 		const [rows] = await connection.query(
 			'SELECT c.id, c.date_assignment, c.state, c.date_completed, ' +
-				'od.product, od.description, od.order_id, cl.client_name, ' + // Agregamos od.order_id
+				'od.product, od.description, od.order_id, cl.client_name, ' +
 				'e.name AS employee_name, e.role AS employee_role ' +
 				'FROM CARD c ' +
 				'JOIN ORDER_DETAIL od ON c.order_detail_id = od.id ' +
@@ -31,7 +59,6 @@ export default class Task {
 				'ORDER BY c.date_assignment DESC',
 			[employeeId],
 		);
-
 		return rows;
 	}
 
