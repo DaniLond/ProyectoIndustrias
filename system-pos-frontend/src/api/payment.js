@@ -31,3 +31,8 @@ export const createConceptRequest = (conceptData) => axios.post('/payment-concep
 export const getPaidProductsByPaymentRequest = (paymentId) => axios.get(`/payments/${paymentId}/products`);
 
 export const createManualPaymentRequest = (paymentData) => axios.post('/payments/manual', paymentData);
+
+export const getPaymentsByDateRangeRequest = (startDate, endDate) =>
+	axios.get('/payments/by-date', {
+		params: { startDate, endDate },
+	});

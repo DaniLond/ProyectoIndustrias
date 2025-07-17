@@ -279,3 +279,25 @@ export const createManualPayment = async (req, res, next) => {
 		if (connection) connection.release();
 	}
 };
+
+export const getPaymentsByDateRange = async (req, res, next) => {
+	const { startDate, endDate } = req.query;
+	let connection;
+
+	try {
+		if (!startDate || !endDate) {
+			return res.status(400).json({
+				error: 'Las fechas de inicio y fin son requeridas',
+			});
+		}
+
+		connection = await connectDB();
+		const payments = await Payment.getPaymentsByDateRange(connection, startDate, endDate);
+
+		res.status(200).json(payments);
+	} catch (error) {
+		next(error);
+	} finally {
+		if (connection) connection.release();
+	}
+};

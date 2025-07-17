@@ -9,7 +9,8 @@ import {
 	getAvailableConceptsRequest,
 	createConceptRequest,
 	getPaidProductsByPaymentRequest,
-  createManualPaymentRequest,
+	createManualPaymentRequest,
+	getPaymentsByDateRangeRequest,
 } from '../api/payment.js';
 
 export const PaymentContext = createContext();
@@ -30,6 +31,7 @@ export const PaymentProvider = ({ children }) => {
 	const [paymentStatistics, setPaymentStatistics] = useState(null);
 	const [errors, setErrors] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [paymentsByDate, setPaymentsByDate] = useState([]);
 
 	useEffect(() => {
 		if (errors.length > 0) {
@@ -222,6 +224,24 @@ export const PaymentProvider = ({ children }) => {
 		}
 	};
 
+	const getPaymentsByDateRange = async (startDate, endDate) => {
+		setIsLoading(true);
+		setErrors([]);
+		try {
+			const res = await getPaymentsByDateRangeRequest(startDate, endDate);
+			setPaymentsByDate(res.data);
+			return res.data;
+		} catch (error) {
+			const errorMessage = error.response?.data?.message || [error.response?.data?.error] || [
+					'Error al obtener pagos por fecha',
+				];
+			setErrors(Array.isArray(errorMessage) ? errorMessage : [errorMessage]);
+			throw error;
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
 	const clearPaymentData = () => {
 		setPaymentData(null);
 	};
@@ -240,6 +260,8 @@ export const PaymentProvider = ({ children }) => {
 				paymentStatistics,
 				errors,
 				isLoading,
+				paymentsByDate,
+				getPaymentsByDateRange,
 				getCompletedTasksForPayment,
 				createPayment,
 				getEmployeePaymentHistory,
@@ -249,7 +271,7 @@ export const PaymentProvider = ({ children }) => {
 				getAvailableConcepts,
 				createConcept,
 				getPaidProductsByPayment,
-        createManualPayment,
+				createManualPayment,
 				clearPaymentData,
 				clearErrors,
 			}}

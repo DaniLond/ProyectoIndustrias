@@ -119,4 +119,24 @@ export default class Payment {
 
 		return rows[0][0];
 	}
+
+	static async getPaymentsByDateRange(connection, startDate, endDate) {
+		const [rows] = await connection.query(
+			`
+        SELECT 
+            p.id as payment_id,
+            p.amount as total_amount,
+            p.date_paid,
+            e.id as employee_id,
+            e.name as employee_name,
+            e.role as employee_role
+        FROM PAYMENTS p
+        JOIN EMPLOYEES e ON p.employee_id = e.id
+        WHERE p.date_paid BETWEEN ? AND ?
+        ORDER BY p.date_paid DESC, e.name ASC
+        `,
+			[startDate, endDate],
+		);
+		return rows;
+	}
 }

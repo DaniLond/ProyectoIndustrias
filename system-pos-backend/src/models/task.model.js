@@ -99,9 +99,9 @@ export default class Task {
 		const [rows] = await connection.query(
 			'SELECT ' +
 				'  COUNT(DISTINCT od.id) as total_products, ' +
-				'  COUNT(DISTINCT CASE WHEN od.state = "Completado" THEN od.id END) as completed_products, ' +
+				'  COUNT(DISTINCT CASE WHEN od.state IN ("Completado", "Despachado") THEN od.id END) as completed_products, ' +
 				'  COUNT(c.id) as total_tasks, ' +
-				'  COUNT(CASE WHEN c.state = "Completado" THEN c.id END) as completed_tasks, ' +
+				'  COUNT(CASE WHEN c.state IN ("Completado", "Despachado") THEN c.id END) as completed_tasks, ' +
 				'  COUNT(CASE WHEN c.state = "En progreso" THEN c.id END) as in_progress_tasks, ' +
 				'  COUNT(CASE WHEN c.state = "Pendiente" THEN c.id END) as pending_tasks ' +
 				'FROM ORDER_DETAIL od ' +

@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Dropdown, DropdownTrigger, DropdownItem, DropdownMenu, User } from '@nextui-org/react';
 
 import { FaHome } from 'react-icons/fa';
-import { FaClipboardList } from 'react-icons/fa';
+import { FaClipboardList, FaMoneyBillWave  } from 'react-icons/fa';
 import { FaHammer } from 'react-icons/fa';
 import { FaUsers } from 'react-icons/fa';
 
@@ -67,6 +67,13 @@ function Navbar() {
 						<FaUsers className='w-[18px] h-[18px] mr-4' />
 						Clientes
 					</a>
+					<a
+                        href='/payments'
+                        className='text-black hover:text-primary text-sm flex items-center hover:bg-primary-50 rounded px-4 py-3 transition-all'
+                    >
+                        <FaMoneyBillWave className='w-[18px] h-[18px] mr-4' />
+                        Pagos
+                    </a>
 				</nav>
 			</div>
 		</div>

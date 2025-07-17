@@ -281,7 +281,7 @@ function CustomTable({
 			</TableHeader>
 			<TableBody emptyContent={`No hay ${name} registrados`} items={sortedItems}>
 				{(item) => (
-					<TableRow key={item.name || item.id}>{(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}</TableRow>
+					<TableRow key={item.name || item.id || item.payment_id}>{(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}</TableRow>
 				)}
 			</TableBody>
 		</Table>

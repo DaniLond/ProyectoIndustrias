@@ -27,6 +27,8 @@ import OrderEditPage from './pages/order/OrderEditPage';
 import EmployeeTasksTemplate from './pages/employee/EmployeeTasksTemplate';
 import CreatePaymentPage from './pages/Payment/CreatePaymentPage';
 import PaymentHistoryPage from './pages/Payment/PaymentHistoryPage';
+import GeneralPaymentsPage from './pages/Payment/GeneralPaymentsPage';
+
 
 function App() {
 	return (
@@ -54,6 +56,7 @@ function App() {
 												<Route path='/create-order' element={<RegisterOrderPage />}></Route>
 												<Route path="/edit-order/:id" element={<OrderEditPage />} />
 												<Route path="/tasks/employee/:employeeId" element={<EmployeeTasksTemplate />} />
+												<Route path="/payments" element={<GeneralPaymentsPage />} />
 												<Route path='/payments/create/:employeeId' element={<CreatePaymentPage />} />
 												<Route path='/payments/history/:employeeId' element={<PaymentHistoryPage />} />
 											</Route>
