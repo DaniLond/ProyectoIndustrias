@@ -49,6 +49,7 @@ function App() {
 
 											{/* Rutas protegidas */}
 											<Route element={<ProtectedRoute />}>
+												<Route path='/register' element={<RegisterPage />}></Route>
 												<Route path='/home' element={<ProductPage />}></Route>
 												<Route path='/clients' element={<ClientePage />}></Route>
 												<Route path='/employees' element={<EmployeePage />}></Route>

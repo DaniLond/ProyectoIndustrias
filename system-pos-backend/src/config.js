@@ -11,8 +11,8 @@ export const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '8h';
 export const ACCEPTED_ORIGINS = process.env.ACCEPTED_ORIGINS
 	? process.env.ACCEPTED_ORIGINS.split(',')
 	: ['http://localhost:4000', 'http://localhost:5173'];
-export const EMAIL_USER = process.env.EMAIL_USER || 'juandavidcoloniaaldana@gmail.com';
-export const EMAIL_PASS = process.env.EMAIL_PASS || 'wgbl jdtp sniu cmrd';
+export const EMAIL_USER = process.env.EMAIL_USER || 'ldanielalc22@gmail.com';
+export const EMAIL_PASS = process.env.EMAIL_PASS || 'ajud zpbp trmu yjhu';
 export const RESET_PASSWORD_TOKEN_EXPIRATION = process.env.RESET_PASSWORD_TOKEN_EXPIRATION || '10m';
 export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 export const DEFAULT_CONFIG = {
